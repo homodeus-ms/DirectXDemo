@@ -1,7 +1,24 @@
 [Watch this video](https://www.youtube.com/watch?v=FNH4_RnqMBU)
 
+---
+
+**(Latest Update)**
+
+**24-10-27일 현재 작업중인 부분**
+
+1. CharacterMoveScript에 몰려있는 기능을 Player로 분산
+
+2. 접속한 캐릭터가 회전했을 때 아직 반영이 안되고 있음
+
 <br>
 
+---
+
+<br>
+
+**이하, 포트폴리오에 대한 설명입니다.**
+
+<br>
 
 **DirectX11 + IOCP 연동 제작중 데모입니다(한참 미완성)**
 
