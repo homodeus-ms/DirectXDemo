@@ -123,7 +123,7 @@ GameRoom.cpp 파일에 있습니다. 위 코드와 거의 같습니다.<br>
 
 <br>
 
-![Move 방식](ReadMeImages/projectileAttack.jpg)
+![Attack과정](ReadMeImages/projectileAttack.jpg)
 
 <br>
 
