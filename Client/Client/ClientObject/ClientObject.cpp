@@ -55,9 +55,6 @@ void ClientObject::Update()
 ObjectType ClientObject::GetObjectType()
 {
 	return _objectType;
-    /*uint64 id = _info.objectid();
-    id >>= 32;
-    return static_cast<ObjectType>(id);*/
 }
 
 void ClientObject::SetInfo(const Protocol::ObjectInfo& info, bool skipScale)
@@ -75,11 +72,6 @@ void ClientObject::SetInfo(const Protocol::ObjectInfo& info, bool skipScale)
 	GetTransform()->SetWorldRotation(rotation);
 }
 
-void ClientObject::CancelMove(const Protocol::S_Move& pkt)
-{
-    assert(_script != nullptr);
-    CancelMove(pkt);
-}
 
 void ClientObject::DoSync()
 {

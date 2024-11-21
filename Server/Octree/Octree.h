@@ -5,7 +5,7 @@
 
 enum
 {
-	MIN_CUBE_DIMENSION = 50,
+	MIN_CUBE_DIMENSION = 5,
 };
 
 class Octree
@@ -32,6 +32,6 @@ private:
 	shared_ptr<Octree> _bRightFront;
 	shared_ptr<Octree> _bRightBack;
 
-	vector <shared_ptr<GameObject>> _gameObjects;
+	vector<shared_ptr<GameObject>> _gameObjects;
 };
 

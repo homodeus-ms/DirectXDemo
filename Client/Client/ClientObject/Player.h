@@ -27,23 +27,13 @@ public:
 	virtual void UpdateSkill() override;
 	virtual void UpdateSpecialSkill() override;
 
-	/*virtual void Move() override;
-	virtual void MoveTo(uint64 id, bool isJumping = false) override;
-	virtual void MoveOtherObjectTo() override;
-	virtual void CancelMove(const Protocol::S_Move& pkt) override;
-	virtual void MoveOtherObject(const Protocol::S_Move& pkt) override;*/
-
-
 	virtual void RotateY(uint64 id, bool toLeft, bool isMyMove) override;
 
 	void Jump();
 	void Attack();
-	//void SpecialAttack();
-
 	void Land(const Vec3 originCamPos, const Vec3 originCamAngle, const Vec3 originPlayerPos);
 
 	// Setter
-	//void SetCamera(shared_ptr<MyCamera> camera) { _camera = camera; }
 	void FinishCameraLerp() { _jumping = true; }
 	virtual void SetOtherObjState(shared_ptr<ClientObject> obj, ObjectState state);
 	
@@ -54,7 +44,7 @@ public:
 	AttackInfo GetAttackInfo() { return _attackInfo; }
 	uint64 GetLastSpecialSkillUseTime() { return _attackInfo.lastSpecialSkillUseTime; }
 
-	// Move °ü·Ã ÇÔ¼ö
+	// Move ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½
 	void SetLastSpecialSkillUseTime(uint64 now) { _attackInfo.lastSpecialSkillUseTime = now; }
 
 private:
@@ -73,15 +63,13 @@ protected:
 private:
 
 	AttackInfo _attackInfo;
-	//queue<Protocol::S_Move> _syncQueue;
-	//bool _shouldPopNext = true;
 
 	shared_ptr<ClientObject> _syncObj;
 	Vec3 _syncLook;
 	Vec3 _syncPos;
 	Vec3 _syncAngle;
 
-    // Jump°ü·Ã
+    // Jumpï¿½ï¿½ï¿½ï¿½
 	const float JUMPING_MOVE_SPEED_DIFF = 1.5f;
 	const float JUMPING_UP_SPEED_DIFF = 3.5f;
 	

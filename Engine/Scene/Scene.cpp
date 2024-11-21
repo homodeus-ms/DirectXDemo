@@ -12,7 +12,7 @@
 
 Scene::Scene()
 {
-	// ÀüÃ¼ ¿ùµå¸¦ ¹Ý Àß¶ó¼­ ¿ÁÆ®¸® ½ÃÀÛ ·çÆ®¸¦ Àâ¾ÆÁÜ
+	// ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½å¸¦ ï¿½ï¿½ ï¿½ß¶ï¿½ ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	const Vec3 mins = { -ROOT_CUBE_X, -ROOT_CUBE_Y, -ROOT_CUBE_Z };
 	const Vec3 maxs = { ROOT_CUBE_X, ROOT_CUBE_Y, ROOT_CUBE_Z };
@@ -67,7 +67,7 @@ void Scene::Update()
 		return;
 
 	BoundingFrustum frustum = _myCamera->GetCamera()->GetBoundingFrustum();
-	// ¿ÁÆ®¸®·Î 1Â÷ÀûÀ¸·Î °É·¯³»±â
+	// ï¿½ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ 1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½É·ï¿½ï¿½ï¿½ï¿½ï¿½
 	{
 		if (_player != nullptr)
 		{
@@ -108,7 +108,7 @@ void Scene::Update()
 
 	INSTANCING->Render(objects);
 
-	// TODO : Blend Object ±×¸®±â
+	// TODO : Blend Object ï¿½×¸ï¿½ï¿½ï¿½
 
 	/*if (!_temporalBlendObjects.empty())
 	{
@@ -184,28 +184,6 @@ shared_ptr<GameObject> Scene::FindObject(uint64 id)
 }
 
 
-uint32 Scene::GetFarPlaneInRootCube()
-{
-	Vec3 pos = _myCamera->GetCamera()->GetTransform()->GetWorldPosition();
-	Vec3 look = _myCamera->GetCamera()->GetTransform()->GetLook();
-	look.y = 0;
-	look.Normalize();
-	
-	float maxX = (look.x > 0) ? (ROOT_CUBE_MAX - pos.x) / look.x : (look.x < 0) ? (-ROOT_CUBE_MAX - pos.x) / look.x : FLT_MAX;
-	float maxY = (look.y > 0) ? (ROOT_CUBE_Y - pos.y) / look.y : (look.y < 0) ? (-ROOT_CUBE_Y - pos.y) / look.y : FLT_MAX;
-	float maxZ = (look.z > 0) ? (ROOT_CUBE_MAX - pos.z) / look.z : (look.z < 0) ? (-ROOT_CUBE_MAX - pos.z) / look.z : FLT_MAX;
-	
-	// °¡Àå ÀÛÀº max °ªÀ» ¼±ÅÃÇÏ¿© ÃÖ´ë °Å¸®¸¦ °áÁ¤ 
-	float maxV = std::min({ maxX, maxY, maxZ }); 
-	// ÃÖ´ë °Å¸®¸¦ ¹ÝÈ¯ 
-
-	/*float ret = maxX == maxV ? pos.x : maxY == maxV ? pos.y : pos.z;
-	ret += maxV;*/
-	
-	return static_cast<uint32>(maxV);
-}
-
-
 void Scene::AddTemproalObject(shared_ptr<GameObject> object)
 {
 	_temporalObjects.push_back(object);
@@ -258,11 +236,11 @@ shared_ptr<class GameObject> Scene::Pick(int32 screenX, int32 screenY)
 		if (gameObject->GetCollider() == nullptr)
 			continue;
 
-		// ViewSpace¿¡¼­ Ray Á¤ÀÇ
+		// ViewSpaceï¿½ï¿½ï¿½ï¿½ Ray ï¿½ï¿½ï¿½ï¿½
 		Vec4 rayOrigin = Vec4(0.f, 0.f, 0.f, 1.f);
 		Vec4 rayDir = Vec4(viewX, viewY, 1.f, 0.f);
 
-		// World·Î
+		// Worldï¿½ï¿½
 		Vec3 worldRayOrigin = XMVector3TransformCoord(rayOrigin, invMatView);
 		Vec3 worldRayDir = XMVector3TransformNormal(rayDir, invMatView);
 		worldRayDir.Normalize();
@@ -302,34 +280,6 @@ shared_ptr<class GameObject> Scene::Pick(int32 screenX, int32 screenY)
 #endif
 
 	return picked;
-}
-
-void Scene::CheckCollision()
-{
-	vector<shared_ptr<BaseCollider>> colliders;
-	_collided = false;
-
-	for (auto& pair : _objects)
-	{
-		shared_ptr<GameObject> object = pair.second;
-
-		if (object->GetCollider() == nullptr)
-			continue;
-		if (object->shared_from_this() == _player)
-			continue;
-		colliders.push_back(object->GetCollider());
-	}
-	
-	// BruteForce
-	for (auto& other : colliders)
-	{
-		if (_player->GetCollider()->Intersects(other))
-		{
-			_collided = true;
-			return;
-		}
-	}
-	_collided = false;
 }
 
 

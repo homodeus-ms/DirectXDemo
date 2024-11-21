@@ -18,38 +18,34 @@ public:
 	virtual void UpdateJump() override;
 	virtual void UpdateSkill() override;
 	virtual void UpdateSpecialSkill() override;
-
 	virtual void LateUpdate() override;
 
 	void HandleCollided(const Protocol::S_Move& pkt);
-	
-
 	void UpdateNextMovePos();
 	void SendLastMovePacket();
-	void SetMoveDir(KEY_TYPE keyTYpe);
 	void SpecialAttack();
 
 	void Pick(POINT point);
-	shared_ptr<Projectile> GetSphereBall() { return _sphereBall; }
 	void DisappearShootBall();
-	
-	void SetCamera(shared_ptr<MyCamera> camera) { _camera = camera; }
 	void UpdateCameraRotate(int32 xDiff);
 
 	// Getter
 	float GetYaw() { return _yaw; }
 	Vec3 GetMoveDir() { return _moveDir; }
 	shared_ptr<MyCamera> GetMyCamera() { return _camera; }
+	shared_ptr<Projectile> GetSphereBall() { return _sphereBall; }
 
 	// Setter
 	void SetSendSkillPacketReady();
+	void SetCamera(shared_ptr<MyCamera> camera) { _camera = camera; }
+	void SetMoveDir(KEY_TYPE keyTYpe);
 
 private:
 	// consts
 	const uint64 SEND_TERM = 200;
 	const float TARGET_REMAIN_TIME = 1000.f;
 	const float SHOOT_BALL_DELAY = 0.4f;
-	const float ROTATE_TO_TARGET_THRESHOLD = 0.984f;
+	const float ROTATE_TO_TARGET_THRESHOLD = 0.984f;    // cos(10) to radian 
 
 private:
 	shared_ptr<MyCamera> _camera;
@@ -57,12 +53,12 @@ private:
 	Vec3 _moveDir;
 	float _diff;
 	float _yaw;
-	// Move ÆÐÅ¶ °£°Ý Á¶Àý
+	// Move ï¿½ï¿½Å¶ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	
 	int32 _firstPackets = 5;
 	uint64 _prevSendTime;
 	
-	// Attack°ü·Ã
+	// Attackï¿½ï¿½ï¿½ï¿½
 	bool _bSkillPacketSent = false;
 
 	Vec3 _targetPos;

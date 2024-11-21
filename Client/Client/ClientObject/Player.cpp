@@ -38,7 +38,7 @@ void Player::Update()
 		return;
 	}
 
-	
+	// TEMP Jump ì²˜ë¦¬
 	if (_jumping)
 	{
 		DoJump();
@@ -64,7 +64,6 @@ void Player::UpdateMove()
 	if (diff < 0.01f)
 	{
 		tr->SetWorldPosition(currPos);
-		//SetState(IDLE, false);
 		return;
 	}
 
@@ -100,130 +99,6 @@ void Player::UpdateSpecialSkill()
 	}
 }
 
-//void Player::Move()
-//{
-//	
-//}
-
-//void Player::MoveTo(uint64 id, bool isJumping)
-//{
-//	shared_ptr<ModelAnimator> animator;
-//	shared_ptr<Transform> transform;
-//	
-//	if (id = GetID())
-//	{
-//		animator = GetModelAnimator();
-//		transform = GetTransform();
-//	}
-//	else
-//	{
-//		shared_ptr<ClientObject> obj = G_DevApp->FindObject(id);
-//		animator = obj->GetModelAnimator();
-//		transform = obj->GetTransform();
-//	}
-//	
-//	assert(animator != nullptr);
-//	assert(transform != nullptr);
-//
-//	animator->SetNextAnimIndex(ANIM_MOVE);
-//	Vec3 currPos = transform->GetWorldPosition();
-//
-//	
-//	if (abs((currPos - _syncPos).LengthSquared()) < 0.5f)
-//	{
-//		auto info = GetInfo();
-//		info.mutable_movestat()->set_collided(false);
-//		info.set_state(IDLE);
-//
-//		return;
-//	}
-//
-//	Vec3 currRotate = transform->GetWorldRotation();
-//
-//	Vec3 look = _syncPos - currPos;
-//	look.Normalize();
-//	float diff = DT * _moveSpeed;
-//	currPos += look * diff;
-//	transform->SetWorldPosition(currPos);
-//
-//
-//	if (id == GetID())
-//	{
-//		Vec3 cameraPos = _camera->GetTransform()->GetWorldPosition();
-//		cameraPos += look * diff;
-//		_camera->GetTransform()->SetWorldPosition(cameraPos);
-//	}
-//}
-
-/*
-void Player::MoveOtherObjectTo()
-{
-	if (_shouldPopNext)
-	{
-		_shouldPopNext = false;
-		const auto& pkt = _syncQueue.front();
-		GetPosRotationLookFromMoveStat(pkt, _syncPos, _syncAngle, _syncLook);
-		GetObjectFromID(pkt, _syncObj);
-		_syncObj->SetState(pkt.state(), false);
-	}
-
-	auto objTr = _syncObj->GetTransform();
-	Vec3 objPos = objTr->GetWorldPosition();
-	Vec3 objAngle = objTr->GetWorldRotation();
-	Vec3 objLook = objTr->GetLook();
-	objLook.Normalize();
-
-	float posDiff = (objPos - _syncPos).LengthSquared();
-	objTr->SetLocalRotation(_syncAngle);
-
-	objTr->SetWorldPosition(_syncPos);
-
-	_syncQueue.pop();
-	_shouldPopNext = true;
-
-}
-
-void Player::CancelMove(const Protocol::S_Move& pkt)
-{
-	const Protocol::MoveStat& movestat = pkt.movestat();
-	*_info.mutable_movestat() = movestat;
-
-	auto transform = GetTransform();
-	Vec3 toPos = { movestat.posx(), movestat.posy(), movestat.posz() };
-	transform->SetWorldPosition(toPos);
-	transform->SetWorldRotation({ movestat.rotatex(), movestat.rotatey(), movestat.rotatez() });
-
-	Vec3 look = transform->GetLook();
-	look.Normalize();
-
-	_camera->UpdateCamera(toPos, look);
-}
-
-void Player::MoveOtherObject(const Protocol::S_Move& pkt)
-{
-	int64 id = pkt.id();
-	auto obj = G_DevApp->FindObject(id);
-
-	SetOtherObjState(obj, pkt.state());
-
-	auto objTr = obj->GetTransform();
-	Vec3 objPos = objTr->GetWorldPosition();
-	Vec3 objAngle = objTr->GetWorldRotation();
-	Vec3 objLook = objTr->GetLook();
-	objLook.Normalize();
-
-	Vec3 targetPos;
-	Vec3 targetLook;
-	Vec3 targetAngle;
-
-	GetPosRotationLookFromMoveStat(pkt, targetPos, targetAngle, targetLook);
-	
-	objTr->SetLocalRotation(targetAngle);
-	objTr->SetWorldPosition(targetPos);
-}
-*/
-
-
 void Player::RotateY(uint64 id, bool toLeft, bool isMyMove)
 {
 	
@@ -231,6 +106,7 @@ void Player::RotateY(uint64 id, bool toLeft, bool isMyMove)
 
 void Player::Jump()
 {
+	// TODO : Jump ê¸°ëŠ¥ ì •ë¦¬ ì¤‘
 	//_camera->GoLerp(true);
 	_jumpStartTime = ::GetTickCount64();
 	SetState(JUMP, false);
@@ -250,6 +126,8 @@ void Player::Attack()
 }
 
 
+
+// ì í”„ ê¸°ëŠ¥ ì •ë¦¬ ì¤‘
 
 void Player::DoJump()
 {
@@ -273,7 +151,7 @@ void Player::DoJump()
 	else
 	{
 		//_camera->GoLerp(false);
-		// ÀÏ´Ü Ãæµ¹ ¹«½Ã, y == 0 À¸·Î
+		// ï¿½Ï´ï¿½ ï¿½æµ¹ ï¿½ï¿½ï¿½ï¿½, y == 0 ï¿½ï¿½ï¿½ï¿½
 		Vec3 pos = playerTransform->GetWorldPosition();
 		pos.y = 0;
 		playerTransform->SetWorldPosition(pos);

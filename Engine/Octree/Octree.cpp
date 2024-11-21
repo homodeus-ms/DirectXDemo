@@ -108,57 +108,6 @@ void Octree::GetGameObjects(OUT vector<shared_ptr<GameObject>>& objects, Boundin
 
 }
 
-/*
-vector<shared_ptr<GameObject>>& Octree::GetGameObjects(DirectX::BoundingFrustum cameraFrustum)
-{
-    if (!(_boundingCube.Contains(cameraFrustum)) || _tLeftFront == nullptr)
-        return _gameObjects;
-
-    if (_tLeftFront->_boundingCube.Contains(cameraFrustum))
-    {
-        return _tLeftFront->GetGameObjects(cameraFrustum);
-    }
-
-    if (_tLeftBack->_boundingCube.Contains(cameraFrustum))
-    {
-        return _tLeftBack->GetGameObjects(cameraFrustum);
-    }
-
-    if (_tRightFront->_boundingCube.Contains(cameraFrustum))
-    {
-        return _tRightFront->GetGameObjects(cameraFrustum);
-    }
-
-    if (_tRightBack->_boundingCube.Contains(cameraFrustum))
-    {
-        return _tRightBack->GetGameObjects(cameraFrustum);
-    }
-
-    if (_bLeftFront->_boundingCube.Contains(cameraFrustum))
-    {
-        return _bLeftFront->GetGameObjects(cameraFrustum);
-    }
-
-    if (_bLeftBack->_boundingCube.Contains(cameraFrustum))
-    {
-        return _bLeftBack->GetGameObjects(cameraFrustum);
-    }
-
-    if (_bRightFront->_boundingCube.Contains(cameraFrustum))
-    {
-        return _bRightFront->GetGameObjects(cameraFrustum);
-    }
-
-    if (_bRightBack->_boundingCube.Contains(cameraFrustum))
-    {
-        return _bRightBack->GetGameObjects(cameraFrustum);
-    }
-
-    return _gameObjects;
-}
-*/
-
-
 
 boolean Octree::Insert(const shared_ptr<GameObject>& object)
 {

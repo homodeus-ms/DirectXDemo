@@ -4,23 +4,23 @@
 Player::Player()
 {
 	static int32 s_startX = 0;
-	// ID ¼ÂÆÃÀº ºÎ¸ðÅ¬·¡½ºÀÇ Create.. ÇÔ¼ö¿¡¼­ ÇÔ
-	//_info.set_name("AA");
+	// ID ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Î¸ï¿½Å¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Create.. ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
+	
+	_info.set_state(IDLE);
+	
 	Protocol::MoveStat* moveStat = _info.mutable_movestat();
 	{
-		moveStat->set_state(ObjectState::OBJECT_STATE_TYPE_IDLE);
-		moveStat->set_animindex(0);
-		moveStat->set_posx(GAME_START_POS_X + s_startX);
-		moveStat->set_posy(GAME_START_POS_Y);
-		moveStat->set_posz(GAME_START_POS_Z);
+		moveStat->set_posx(static_cast<float>(GAME_START_POS_X + s_startX));
+		moveStat->set_posy(static_cast<float>(GAME_START_POS_Y));
+		moveStat->set_posz(static_cast<float>(GAME_START_POS_Z));
 		moveStat->set_lookx(0);
 		moveStat->set_looky(0);
 		moveStat->set_lookz(1);
 		moveStat->set_rotatex(0);
-		moveStat->set_rotatey(3.14);
+		moveStat->set_rotatey(3.14f);
 		moveStat->set_rotatez(0);
 		moveStat->set_collided(false);
-		moveStat->set_speed(3);
+		moveStat->set_speed(5);
 	}
 
 	s_startX += 2;

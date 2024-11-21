@@ -4,22 +4,33 @@
 #include "ServerPacketHandler.h"
 #include "Player.h"
 #include "Prop.h"
+#include "SmallMonster.h"
+#include "LargeMonster.h"
+#include "Projectile.h"
+#include "SphereBall.h"
 
+#include "BaseCollider.h"
 #include "SphereCollider.h"
 #include "AABBBoxCollider.h"
 #include "OBBBoxCollider.h"
 #include "BoundingCube.h"
 
+
 atomic<uint64> GameObject::s_id = 1;
 
 GameObject::~GameObject()
 {
-	_room = nullptr;
+	
 }
 
 void GameObject::Update()
 {
-
+	shared_ptr<Component> comp = GetComponent(ComponentType::Collider);
+	shared_ptr<BaseCollider> collider = static_pointer_cast<BaseCollider>(comp);
+	if (collider)
+	{
+		collider->SetNewCenter(GetWorldPos());
+	}
 }
 
 void GameObject::Attack(GameObjectRef target)
@@ -32,9 +43,10 @@ PlayerRef GameObject::CreatePlayer()
 	GameObjectRef object = static_pointer_cast<GameObject>(player);
 	SetId(object, ObjectType::OBJECT_TYPE_PLAYER);
 
-	auto collider = make_shared<SphereCollider>();
-	collider->GetBoundingSphere().Center = player->GetWorldPos();
-	collider->SetRadius(PLAYER_COLLIDER_RADIUS);
+	auto collider = make_shared<OBBBoxCollider>(player);
+	collider->GetBoundingBox().Center = player->GetWorldPos();
+	collider->GetBoundingBox().Extents = PLAYER_EXTENTS;
+
 	player->AddComponent(collider);
 	
 	return player;
@@ -46,9 +58,10 @@ PropRef GameObject::CreateTower(int32 posX, int32 posZ)
 	GameObjectRef object = static_pointer_cast<GameObject>(prop);
 	SetId(object, ObjectType::OBJECT_TYPE_PROP_TOWER);
 
-	auto collider = make_shared<OBBBoxCollider>();
+	auto collider = make_shared<OBBBoxCollider>(prop);
 	collider->GetBoundingBox().Center = prop->GetWorldPos();
 	collider->GetBoundingBox().Extents = TOWER_EXTENTS;
+	
 	prop->AddComponent(collider);
 	
 	return prop;
@@ -59,12 +72,44 @@ PropRef GameObject::CreateContainer(int32 posX, int32 posZ)
 	GameObjectRef object = static_pointer_cast<GameObject>(prop);
 	SetId(object, ObjectType::OBJECT_TYPE_PROP_CONTAINER);
 
-	auto collider = make_shared<AABBBoxCollider>();
+	auto collider = make_shared<OBBBoxCollider>(prop);
 	collider->GetBoundingBox().Center = prop->GetWorldPos();
 	collider->GetBoundingBox().Extents = CONTAINER_EXTENTS;
+	
 	prop->AddComponent(collider);
 
 	return prop;
+}
+
+SMonsterRef GameObject::CreateSmallMonster(int32 posX, int32 posZ)
+{
+	SMonsterRef monster = make_shared<SmallMonster>(posX, posZ);
+	GameObjectRef object = static_pointer_cast<GameObject>(monster);
+	SetId(object, ObjectType::OBJECT_TYPE_SMALL_MONSTER);
+
+	auto collider = make_shared<SphereCollider>(monster);
+	collider->GetBoundingSphere().Center = object->GetWorldPos();
+	collider->GetBoundingSphere().Radius = SMALL_MONSTER_RADIUS;
+	object->AddComponent(collider);
+
+	return monster;
+}
+
+ProjectileRef GameObject::CreateSphereBall(PlayerRef owner, Vec3 startPos, Vec3 dir)
+{
+	GameObjectRef obj = make_shared<SphereBall>();
+	ProjectileRef projectile = static_pointer_cast<Projectile>(obj);
+
+	SetId(obj, ObjectType::OBJECT_TYPE_PROJECTILE);
+	
+	projectile->SetProjectileInfo(owner, startPos, dir);
+
+	auto collider = make_shared<SphereCollider>(obj);
+	collider->GetBoundingSphere().Center = obj->GetWorldPos();
+	collider->GetBoundingSphere().Radius = SPHERE_BALL_RADIUS;
+	obj->AddComponent(collider);
+
+	return projectile;
 }
 
 void GameObject::SetId(GameObjectRef& object, ObjectType type)
@@ -88,7 +133,7 @@ void GameObject::AddComponent(shared_ptr<Component> component)
 }
 Vec3 GameObject::GetWorldPos()
 {
-	MoveStat stat = _info.movestat();
+	const MoveStat& stat = _info.movestat();
 	Vec3 pos = { stat.posx(), stat.posy(), stat.posz() };
 	return pos;
 }
@@ -102,7 +147,7 @@ ObjectType GameObject::GetObjectType()
 shared_ptr<Component> GameObject::GetComponent(ComponentType type)
 {
 	uint8 index = static_cast<uint8>(type);
-	ASSERT_CRASH(index < COMPONENT_COUNT);
+	ASSERT_CRASH(index < COMPONENT_COUNT, "GameObject::105, index < Component Count in GetComponent()");
 	return _components[index];
 }
 
@@ -115,19 +160,27 @@ shared_ptr<BaseCollider> GameObject::GetCollider()
 BoundingCube GameObject::GetBoundingCube()
 {
 	Vec3 pos = GetWorldPos();
-	BoundingCube cube({ pos.x - BOUND_DIST, pos.y - BOUND_DIST, pos.z - BOUND_DIST },
+	BoundingCube cube({ pos.x - BOUND_DIST, pos.y, pos.z - BOUND_DIST },
 		{ pos.x + BOUND_DIST, pos.y + BOUND_DIST, pos.z + BOUND_DIST });
 
 	return cube;
 }
 
-void GameObject::UpdateMovePos(MoveStat* moveStat)
+void GameObject::UpdateInfo(Protocol::C_TryMove& pkt)
 {
 	MoveStat* origin = _info.mutable_movestat();
-	*origin = *moveStat;
+	_info.set_state(pkt.state());
+	origin->CopyFrom(pkt.movestat());
 
 	auto collider = GetCollider();
-	collider->SetNewCenter({ moveStat->posx(), moveStat->posy(), moveStat->posz() });
+	collider->SetNewCenter({ origin->posx(), origin->posy(), origin->posz() });
 	
+}
+
+void GameObject::SetPos(Vec3 newPos)
+{
+	_info.mutable_movestat()->set_posx(newPos.x);
+	_info.mutable_movestat()->set_posy(newPos.y);
+	_info.mutable_movestat()->set_posz(newPos.z);
 }
 

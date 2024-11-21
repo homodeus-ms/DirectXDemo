@@ -26,18 +26,11 @@ public:
 	virtual void UpdateJump() {};
 	virtual void UpdateSkill() {};
 	virtual void UpdateSpecialSkill() {};
-	
-	void SetInfo(const Protocol::ObjectInfo& info, bool skipScale = false);
 
-	virtual void Move() {}
-	virtual void MoveTo(uint64 id, bool isJumping = false) {}
-	virtual void MoveOtherObjectTo() {}
-	virtual void CancelMove(const Protocol::S_Move& pkt);
-	virtual void MoveOtherObject(const Protocol::S_Move& pkt) {}
 	virtual void RotateY(uint64 id, bool toLeft, bool isMyMove) {}
 	void DoSync();
 
-	// Packet Send Helper ÇÔ¼öµé
+	// Packet Send Helper ï¿½Ô¼ï¿½ï¿½ï¿½
 	void SendChangeState();
 	void SendMovePacket();
 	void SendChangeDirPacket(float yaw);
@@ -45,7 +38,7 @@ public:
 	void SendCreateProjectilePacket(uint64 ownerId, ProjectileType type, Vec3 pos, Vec3 dir);
 
 
-	// Ä³¸¯ÅÍ ¿òÁ÷ÀÓ °ü·Ã
+	// Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	void RotateYaw(float yaw);
 
 	// Getter
@@ -61,6 +54,7 @@ public:
 
 	// Setter
 	void SetMoveScript(shared_ptr<CharacterMoveScript> script) { _script = script; }
+	void SetInfo(const Protocol::ObjectInfo& info, bool skipScale = false);
 	virtual void SetState(ObjectState state, bool sendPacket);
 
 	void UpdateInfo();

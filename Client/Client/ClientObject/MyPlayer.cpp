@@ -65,7 +65,7 @@ void MyPlayer::UpdateSkill()
 		SendSkillPacket(/* Send Timestamp for SpecialSkill */false);
 	}
 
-	// ÇÃ·¹ÀÌ¾î°¡ Å¸ÄÏÀ» ÇâÇÏ°Ô
+	// ï¿½Ã·ï¿½ï¿½Ì¾î°¡ Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ï°ï¿½
 	if (_bTargetOn && !_bRotateToTarget)
 	{
 		_bRotateToTarget = true;

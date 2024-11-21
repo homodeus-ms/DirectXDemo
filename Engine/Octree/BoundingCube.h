@@ -25,19 +25,6 @@ public:
 	bool Intersects(DirectX::BoundingFrustum cameraFrustum);
 
 public:
-	// Near Top Left(0)
-	// Near Top Right(1)
-	// Near Bottom Right(2)
-	// Near Bottom Left(3)
-	// Far Top Left(4)
-	// Far Top Right(5)
-	// Far Bottom Right(6)
-	// Far Bottom Left(7)
-	enum
-	{
-		BOTTOM_PLANE = 2,
-		FAR_PLANE = 4,
-	};
 	
 	const float EPSILON = 0.0001f;
 

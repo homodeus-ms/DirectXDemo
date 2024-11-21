@@ -29,8 +29,8 @@ private:
 	friend class DevApp1;
 
 	const float ANIM_FRAME_SPEED = 2.5f;
-	const uint64 MY_CAMERA_ID = 0xFFFF'FFFF;
-	const uint64 GLOBAL_LIGHT_ID = 0xFFFF'FFFE;
+	const uint64 MY_CAMERA_ID = 0xFFFF'FFFF;     // TEMP : 하위 32비트만
+	const uint64 GLOBAL_LIGHT_ID = 0xFFFF'FFFE;  // TEMP : 하위 32비트만
 	const float SPHERE_BALL_RADIUS = 0.5f;
 
 	// read only

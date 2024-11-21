@@ -31,10 +31,10 @@ public:
 	shared_ptr<GameObject> GetMyPlayer() { return _player; }
 	shared_ptr<Octree> GetOctreeRoot() { return _octreeRoot; }
 	vector<shared_ptr<GameObject>>& GetBoundingObjects(BoundingCube cube) { return _octreeRoot->GetGameObjects(cube); }
-	uint32 GetFarPlaneInRootCube();
+	
 
 
-	// Ä«¸Þ¶ó¿Í ¶óÀÌÆ® ÇÏ³ª¾¿¸¸ ÀÖ´Ù °¡Á¤
+	// Ä«ï¿½Þ¶ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Æ® ï¿½Ï³ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ï¿½
 	shared_ptr<GameObject> GetCamera() { return _cameras.empty() ? nullptr : *_cameras.begin(); }
 	shared_ptr<GameObject> GetLight() { return _lights.empty() ? nullptr : *_lights.begin(); }
 	bool HasCollided() { return _collided; }
@@ -51,7 +51,7 @@ public:
 	void RemoveBlendTemoporalObject(shared_ptr<GameObject> object);
 
 	shared_ptr<class GameObject> Pick(int32 screenX, int32 screenY);
-	void CheckCollision();
+	
 
 private:
 	
@@ -65,7 +65,7 @@ public:
 	int32 _culledCount = -1;
 
 private:
-	//unordered_set<shared_ptr<GameObject>> _objects;
+	
 	unordered_map<uint64, shared_ptr<GameObject>> _objects;
 	list<shared_ptr<GameObject>> _temporalObjects;
 	list<shared_ptr<GameObject>> _temporalBlendObjects;

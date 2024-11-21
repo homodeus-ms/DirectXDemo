@@ -9,10 +9,10 @@ public:
 	Player();
 	virtual ~Player();
 	void SetSession(GameSessionRef& session) { _session = session; }
-	GameSessionRef GetSession() { return _session; }
+	GameSessionRef GetSession() { return _session.lock(); }
 
 
 private:
-	GameSessionRef _session = nullptr;
-};
+	weak_ptr<GameSession> _session;
 
+};

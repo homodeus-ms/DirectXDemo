@@ -1,20 +1,31 @@
 #include "pch.h"
+#include <iomanip>
 #include "GameRoom.h"
 #include "Session.h"
 #include "GameSession.h"
 #include "ServerPacketHandler.h"
+#include "GameObject.h"
 #include "Player.h"
+#include "Monster.h"
+#include "SmallMonster.h"
+#include "LargeMonster.h"
+#include "Projectile.h"
 #include "Prop.h"
 #include "BoundingCube.h"
 #include "SphereCollider.h"
 #include "AABBBoxCollider.h"
 #include "OBBBoxCollider.h"
+#include "MovePacketHandler.h"
+#include "SkillPacketHandler.h"
+#include "RttRecorder.h"
 
 GameRoomRef GRoom = make_shared<GameRoom>();
 
 GameRoom::GameRoom()
 {
-	
+	_movePacketHandler = make_unique<MovePacketHandler>();
+	_skillPacketHandler = make_unique<SkillPacketHandler>();
+	_rttRecorder = make_shared<RttRecorder>();
 }
 
 GameRoom::~GameRoom()
@@ -24,12 +35,22 @@ GameRoom::~GameRoom()
 
 void GameRoom::Init()
 {
-	BoundingCube cube(Vec3(-WORLD_SIZE, -WORLD_SIZE, -WORLD_SIZE), Vec3(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE));
+	Vec3 rootCubeCenter = { 0, 0, 0 };
+	Vec3 rootCubeExtents = { WORLD_SIZE, WORLD_SIZE_MAX_Y, WORLD_SIZE };
+	BoundingCube cube(rootCubeCenter, rootCubeExtents);
 	_octreeRoot = make_shared<Octree>(cube);
 
+	vector<vector<int16>> spawnPos(RANDOM_MAX);
+	for (int32 i = 0; i < RANDOM_MAX; ++i)
+	{
+		vector<int16> v(RANDOM_MAX);
+		spawnPos[i] = v;
+	}
+
+	GetSpawnPos(spawnPos);
+	SpawnBasic(spawnPos);
+	SpawnSmallMonster();
 	
-	SpawnContainers();
-	SpawnTowers();
 }
 
 void GameRoom::Update()
@@ -38,47 +59,41 @@ void GameRoom::Update()
 	{
 		item.second->Update();
 	}
-	/*for (auto& item : _props)
+	for (auto& item : _projectiles)
 	{
 		item.second->Update();
-	}*/
+	}
+	for (uint64 id : _trasheIDs)
+		RemoveObject(id);
+	
+	_trasheIDs.clear();
 }
 
 void GameRoom::EnterRoom(GameSessionRef session)
 {
 	PlayerRef player = GameObject::CreatePlayer();
 
-	_octreeRoot->Insert(player);
-
-	session->_gameRoom = GetRoomRef();
-	session->_player = player;
+	session->SetGameRoom(GetRoomRef());
+	session->SetSessionPlayer(player);
 	player->SetSession(session);
 
-	// »ý¼ºµÈ ÇÃ·¹ÀÌ¾î Á¤º¸¸¦ Å¬¶óÀÌ¾ðÆ®·Î Àü¼Û (S_MyPlayer)
+	// Ã³ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Colliderï¿½ï¿½ï¿½ï¿½ Extentsï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	SendStartInfos(session, GetTimeStamp());
+
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (S_MyPlayer)
 	{
 		Protocol::S_MyPlayer pkt;
 		*pkt.mutable_info() = player->GetInfo();
 		SendBufferRef sendBuffer = ServerPacketHandler::MakeSendBuffer(pkt);
 		session->Send(sendBuffer);
 	}
-	// »ý¼ºµÈ Å¬¶ó¿¡°Ô ÇöÀç ·ë¿¡ Á¸ÀçÇÏ´Â ¸ðµç ¿ÀºêÁ§Æ® Á¤º¸¸¦ Àü¼ÛÇØÁÜ(S_AddObject)
+
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ó¿¡°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ë¿¡ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(S_AddObject)
 	{
-		Protocol::S_AddObject pkt;
-
-		for (auto& item : _players)
-		{
-			Protocol::ObjectInfo* info = pkt.add_objects();
-			*info = item.second->GetInfo();
-		}
-
-		for (auto& item : _props)
-		{
-			Protocol::ObjectInfo* info = pkt.add_objects();
-			*info = item.second->GetInfo();
-		}
-
-		SendBufferRef sendBuffer = ServerPacketHandler::MakeSendBuffer(pkt);
-		session->Send(sendBuffer);
+		SendObjects(session, _players);
+		SendObjects(session, _props);
+		SendObjects(session, _sMonsters);
+		
 	}
 
 	AddObject(player);
@@ -86,68 +101,44 @@ void GameRoom::EnterRoom(GameSessionRef session)
 
 void GameRoom::LeaveRoom(GameSessionRef session)
 {
+	PlayerRef player = session->GetSessionPlayer();
 	
+	// TEMP
+	cout << "Player(" << player->GetID() << ")" << "is Out!" << endl;
+
+	RemoveObject(player->GetID());
+}
+
+uint64 GameRoom::GetTimeStamp()
+{
+	return chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count();
 }
 
 
-void GameRoom::ChangeState(Protocol::ObjectInfo info)
+void GameRoom::ChangeState(Protocol::C_ChangeState pkt)
 {
-	
+	uint64 id = pkt.id();
+	ObjectState state = pkt.state();
+	GameObjectRef object = FindObject(id);
+
+	if (object->GetState() != state)
+	{
+		object->GetInfo().set_state(state);
+		Protocol::S_ChangeState sendPkt;
+		sendPkt.set_id(id);
+		sendPkt.set_state(state);
+		
+		SendBufferRef sendBuffer = ServerPacketHandler::MakeSendBuffer(sendPkt);
+		Broadcast(sendBuffer);
+	}
+
+	_rttRecorder->SendPing(id);
 }
 
 void GameRoom::TryMove(Protocol::C_TryMove pkt)
 {
-	uint64 id = pkt.id();
-	PlayerRef player = _players[id];
-	ASSERT_CRASH(player != nullptr);
-
-	MoveStat* moveStat = pkt.mutable_movestat();
-
-	if (moveStat->state() == ObjectState::OBJECT_STATE_TYPE_IDLE)
-		return;
-	
-	player->UpdateMovePos(moveStat);
-
-	if (pkt.movestat().state() != ObjectState::OBJECT_STATE_TYPE_JUMP)
-		CheckCollision(player);
-
-	if (_collided)
-	{
-		cout << "Collided!" << endl;
-
-		Vec3 originPos = { moveStat->posx(), moveStat->posy(), moveStat->posz() };
-		Vec3 look = { moveStat->lookx(), moveStat->looky(), moveStat->lookz() };
-		// Round Trip ½Ã°£ ÃøÁ¤?
-		// ÀÓ½Ã
-		const float dt = 100.f;
-		Vec3 newPos = originPos + look * dt;
-
-		Protocol::S_Move pkt;
-		pkt.set_id(player->GetID());
-
-		MoveStat* stat = pkt.mutable_movestat();
-		*stat = *moveStat;
-		stat->set_posx(newPos.x);
-		stat->set_posy(newPos.y);
-		stat->set_posz(newPos.z);
-		stat->set_collided(true);
-
-		player->UpdateMovePos(moveStat);
-
-		SendBufferRef sendBuffer = ServerPacketHandler::MakeSendBuffer(pkt);
-		Broadcast(sendBuffer);
-	}
-	else
-	{
-		Protocol::S_Move pkt;
-		pkt.set_id(player->GetID());
-		MoveStat* stat = pkt.mutable_movestat();
-		*stat = *moveStat;
-
-		SendBufferRef sendBuffer = ServerPacketHandler::MakeSendBuffer(pkt);
-		Broadcast(sendBuffer);
-	}
-	
+	_movePacketHandler->HandleMove(pkt);
+	return;
 }
 
 void GameRoom::AddObject(GameObjectRef object)
@@ -165,7 +156,15 @@ void GameRoom::AddObject(GameObjectRef object)
 	case ObjectType::OBJECT_TYPE_PROP_TOWER:
 		_props[id] = static_pointer_cast<Prop>(object);
 		break;
-	
+	case ObjectType::OBJECT_TYPE_SMALL_MONSTER:
+		_sMonsters[id] = static_pointer_cast<SmallMonster>(object);
+		break;
+	case ObjectType::OBJECT_TYPE_LARGE_MONSTER:
+		_lMonsters[id] = static_pointer_cast<LargeMonster>(object);
+		break;
+	case ObjectType::OBJECT_TYPE_PROJECTILE:
+		_projectiles[id] = static_pointer_cast<Projectile>(object);
+		break;
 	default:
 		return;
 	}
@@ -174,13 +173,38 @@ void GameRoom::AddObject(GameObjectRef object)
 
 	_octreeRoot->Insert(object);
 
-	// ½Å±Ô ¿ÀºêÁ§Æ®ÀÇ Á¤º¸¸¦ Àü¼Û
+
+	// ï¿½Å±ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+
+	if (objectType == ObjectType::OBJECT_TYPE_PROJECTILE)
+	{
+		ProjectileRef projectile = static_pointer_cast<Projectile>(object);
+		Vec3 pos = projectile->GetWorldPos();
+		Vec3 dir = projectile->GetDir();
+
+		Protocol::S_CreateProjectile pkt;
+		pkt.set_ownerid(projectile->GetOwner()->GetID());
+		pkt.set_projectileid(id);
+		pkt.set_type(projectile->GetProjectileType() == ProjectileType::PROJECTILE_SPHERE_BALL ? ProjectileType::PROJECTILE_SPHERE_BALL : ProjectileType::PROJECTILE_WIDE_BALL);
+		Protocol::Vector3* pktPos = pkt.mutable_startpos();
+		Protocol::Vector3* pktDir = pkt.mutable_dir();
+		
+		pktPos->set_x(pos.x);
+		pktPos->set_y(pos.y);
+		pktPos->set_z(pos.z);
+		pktDir->set_x(dir.x);
+		pktDir->set_y(dir.y);
+		pktDir->set_z(dir.z);
+
+		SendBufferRef sendBuffer = ServerPacketHandler::MakeSendBuffer(pkt);
+		Broadcast(sendBuffer);
+	}
+	else
 	{
 		Protocol::S_AddObject pkt;
-
 		Protocol::ObjectInfo* info = pkt.add_objects();
 		*info = object->GetInfo();
-
+		
 		SendBufferRef sendBuffer = ServerPacketHandler::MakeSendBuffer(pkt);
 		Broadcast(sendBuffer);
 	}
@@ -192,7 +216,37 @@ void GameRoom::RemoveObject(uint64 id)
 	if (gameObject == nullptr)
 		return;
 
-	// ¿ÀºêÁ§Æ® Remove»ç½ÇÀ» Àü¼Û
+	ObjectType objectType = gameObject->GetObjectType();
+
+	switch (objectType)
+	{
+	case ObjectType::OBJECT_TYPE_PLAYER:
+	{
+		_players.erase(id);
+		_rttRecorder->DeleteRecord(id);
+		break;
+	}
+	case ObjectType::OBJECT_TYPE_PROP_CONTAINER:
+		// intentional fall-through
+	case ObjectType::OBJECT_TYPE_PROP_TOWER:
+		_props.erase(id);
+		break;
+	case ObjectType::OBJECT_TYPE_SMALL_MONSTER:
+		_sMonsters.erase(id);
+		break;
+	case ObjectType::OBJECT_TYPE_LARGE_MONSTER:
+		_lMonsters.erase(id);
+		break;
+	case ObjectType::OBJECT_TYPE_PROJECTILE:
+		_projectiles.erase(id);
+		break;
+	default:
+		return;
+	}
+
+	_octreeRoot->Remove(gameObject);
+
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® Removeï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	{
 		Protocol::S_RemoveObject pkt;
 		pkt.add_ids(id);
@@ -200,7 +254,66 @@ void GameRoom::RemoveObject(uint64 id)
 		SendBufferRef sendBuffer = ServerPacketHandler::MakeSendBuffer(pkt);
 		Broadcast(sendBuffer);
 	}
+}
 
+void GameRoom::ChangeDir(Protocol::C_ChangeDir pkt)
+{
+	uint64 id = pkt.id();
+	PlayerRef player = FindPlayer(id);
+	ObjectInfo& info = player->GetInfo();
+	info.mutable_movestat()->set_rotatey(pkt.yaw());
+
+	{
+		Protocol::S_ChangeDir sendPkt;
+		sendPkt.set_id(pkt.id());
+		sendPkt.set_yaw(pkt.yaw());
+
+		SendBufferRef sendBuffer = ServerPacketHandler::MakeSendBuffer(sendPkt);
+		Broadcast(sendBuffer);
+	}
+}
+
+void GameRoom::HandleSkill(uint64 id)
+{
+	_skillPacketHandler->HandleSkillPacket(id);
+}
+
+void GameRoom::HandleSpecialSkill(Protocol::C_SpecialSkill pkt)
+{
+	_skillPacketHandler->HandleSpecialSkillPacket(pkt);
+}
+
+void GameRoom::HandleCreateProjectile(Protocol::C_CreateProjectile pkt)
+{
+	uint64 ownerId = pkt.ownerid();
+	GameObjectRef obj = FindObject(ownerId);
+
+	if (obj == nullptr)
+	{
+		LOG("HandleCreateProjectile, Owner is nullptr");
+		return;
+	}
+
+	ProjectileType type = pkt.type();
+	PlayerRef owner = static_pointer_cast<Player>(obj);
+	Vec3 pos = { pkt.startpos().x(), pkt.startpos().y(), pkt.startpos().z() };
+	Vec3 dir = { pkt.dir().x(), pkt.dir().y(), pkt.dir().z() };
+
+	switch (type)
+	{
+	case ProjectileType::PROJECTILE_SPHERE_BALL:
+	{
+		GameObjectRef projectile = GameObject::CreateSphereBall(owner, pos, dir);
+		AddObject(projectile);
+		break;
+	}
+	case ProjectileType::PROJECTILE_WIDE_BALL:
+		ASSERT_CRASH(false, "HAVE NOT CREATE FUNC YET");
+		break;
+	default:
+		ASSERT_CRASH(false, "Create Projectile switch-case default error");
+		break;
+	}
 }
 
 
@@ -217,9 +330,9 @@ GameObjectRef GameRoom::FindObject(uint64 id)
 		auto findIt = _players.find(id);
 		if (findIt != _players.end())
 			return findIt->second;
-	}
-	break;
 
+		break;
+	}
 	case ObjectType::OBJECT_TYPE_PROP_TOWER:
 		// intentional fall-through
 	case ObjectType::OBJECT_TYPE_PROP_CONTAINER:
@@ -227,8 +340,28 @@ GameObjectRef GameRoom::FindObject(uint64 id)
 		auto findIt = _props.find(id);
 		if (findIt != _props.end())
 			return findIt->second;
+
+		break;
 	}
-	break;
+	case ObjectType::OBJECT_TYPE_PROJECTILE:
+	{
+		auto findIt = _projectiles.find(id);
+		if (findIt != _projectiles.end())
+			return findIt->second;
+
+		break;
+	}
+	case ObjectType::OBJECT_TYPE_SMALL_MONSTER:
+	{
+		auto findIt = _sMonsters.find(id);
+		if (findIt != _sMonsters.end())
+			return findIt->second;
+
+		break;
+	}
+	default:
+		ASSERT_CRASH(false, "FIND OBJECT SWITCH CASE DERAULT");
+		break;
 	}
 
 
@@ -250,7 +383,7 @@ void GameRoom::SpawnTowers()
 
 void GameRoom::SpawnContainers()
 {
-	for (int32 i = 0; i < MAX_TOWER_COUNT; ++i)
+	for (int32 i = 0; i < MAX_CONTAINER_COUNT; ++i)
 	{
 		int32 x = GetRandomPos();
 		int32 z = GetRandomPos();
@@ -261,55 +394,265 @@ void GameRoom::SpawnContainers()
 	}
 }
 
-int32 GameRoom::GetRandomPos()
+void GameRoom::SpawnSmallMonster()
+{
+	using Matrix = DirectX::SimpleMath::Matrix;
+
+	float offsetX = 2;
+
+	Vec3 tempStart = { 190, 0, 240 };
+	
+	for (int32 i = 0; i < 9; ++i)
+	{
+		tempStart.x += i * offsetX;
+		Vec3 pos = tempStart;
+
+		SMonsterRef monster = GameObject::CreateSmallMonster(pos.x, pos.z);
+
+		AddObject(monster);
+	}
+
+	
+}
+
+void GameRoom::SpawnLargeMonster()
+{
+}
+
+void GameRoom::GetSpawnPos(OUT vector<vector<int16>>& spawnPos)
+{
+	
+	for (int32 i = 0; i < MAX_CONTAINER_COUNT; ++i)
+	{
+		int32 x, z;
+		do 
+		{
+			x = GetRandomPos();
+			z = GetRandomPos();
+
+		} while (spawnPos[z][x] != 0);
+
+		spawnPos[z][x] = static_cast<int16>(ObjectType::OBJECT_TYPE_PROP_CONTAINER);
+	}
+	for (int32 i = 0; i < MAX_TOWER_COUNT; ++i)
+	{
+		int32 x, z;
+		do
+		{
+			x = GetRandomPos();
+			z = GetRandomPos();
+		} while (spawnPos[z][x] != 0);
+
+		spawnPos[z][x] = static_cast<int16>(ObjectType::OBJECT_TYPE_PROP_TOWER);
+	}
+	for (int32 i = 0; i < MAX_SMALL_MONSTER_COUNT; ++i)
+	{
+		int32 x, z;
+		do
+		{
+			x = GetRandomPos();
+			z = GetRandomPos();
+		} while (spawnPos[z][x] != 0);
+
+		spawnPos[z][x] = static_cast<int16>(ObjectType::OBJECT_TYPE_SMALL_MONSTER);
+	}
+}
+
+void GameRoom::SpawnBasic(vector<vector<int16>> spawnPos)
+{
+	int32 spawnCount = 0;
+
+	for (int32 i = 0; i < RANDOM_MAX; ++i)
+	{
+		for (int32 j = 0; j < RANDOM_MAX; ++j)
+		{
+			if (spawnPos[i][j] == 0)
+				continue;
+			
+
+			ObjectType type = static_cast<ObjectType>(spawnPos[i][j]);
+
+			int32 posx = GAME_START_POS_X + (j - (RANDOM_MAX / 2));
+			int32 posz = GAME_START_POS_Z + (i - (RANDOM_MAX / 2));
+
+			if (posx < GAME_START_POS_X + 5 && posx > GAME_START_POS_X - 5 &&
+				posz < GAME_START_POS_Z + 5 && posz > GAME_START_POS_Z - 5)
+				continue;
+
+			switch (type)
+			{
+			case ObjectType::OBJECT_TYPE_PROP_CONTAINER:
+			{
+				AddObject(GameObject::CreateContainer(posx, posz));
+				++spawnCount;
+				break;
+			}
+			case ObjectType::OBJECT_TYPE_PROP_TOWER:
+			{
+				AddObject(GameObject::CreateTower(posx, posz));
+				++spawnCount;
+				break;
+			}
+			case ObjectType::OBJECT_TYPE_SMALL_MONSTER:
+			{
+				AddObject(GameObject::CreateSmallMonster(posx, posz));
+				++spawnCount;
+				break;
+			}
+			default:
+				break;
+			}
+		}
+	}
+
+	cout << ++spawnCount << endl;
+
+
+}
+
+int32 GameRoom::GetRandomPos(int32 limit)
 {
 	int32 pos;
-	
-	do {
-		pos = rand() % RANDOM_MAX - RANDOM_MAX / 2;
-	} while (pos >= -5 && pos <= 5);
+	int32 max = limit == 0 ? RANDOM_MAX : limit;
+	pos = rand() % max;
 
 	return pos;
 }
 
+void GameRoom::SendObjects(GameSessionRef session, Protocol::S_AddObject& pkt)
+{
+	SendBufferRef sendBuffer = ServerPacketHandler::MakeSendBuffer(pkt);
+	session->Send(sendBuffer);
+}
 
 
+
+float GameRoom::GetAverageRttTime(uint64 id)
+{
+	return _rttRecorder->GetRtt(id);
+}
 
 void GameRoom::Broadcast(SendBufferRef& sendBuffer)
 {
 	for (auto& item : _players)
 	{
-		ASSERT_CRASH(item.second->GetSession() != nullptr);
+		ASSERT_CRASH(item.second->GetSession() != nullptr, "GameRoom,cpp::315, player's Session is nullptr in BroadCast()");
 		item.second->GetSession()->Send(sendBuffer);
 	}
 }
 
-void GameRoom::CheckCollision(PlayerRef player)
+void GameRoom::SendStartInfos(GameSessionRef session, uint64 startServerTime)
 {
-	_collided = false;
+	Protocol::S_StartInfos pkt;
+	{
+		Protocol::Vector3* v = pkt.mutable_playerextents();
+		v->set_x(PLAYER_EXTENTS.x);
+		v->set_y(PLAYER_EXTENTS.y);
+		v->set_z(PLAYER_EXTENTS.z);
+	}
+	{
+		Protocol::Vector3* v = pkt.mutable_containerextents();
+		v->set_x(CONTAINER_EXTENTS.x);
+		v->set_y(CONTAINER_EXTENTS.y);
+		v->set_z(CONTAINER_EXTENTS.z);
+	}
+	{
+		Protocol::Vector3* v = pkt.mutable_towerextents();
+		v->set_x(TOWER_EXTENTS.x);
+		v->set_y(TOWER_EXTENTS.y);
+		v->set_z(TOWER_EXTENTS.z);
+	}
+	{
+		Protocol::Vector3* v = pkt.mutable_largemonsterextents();
+		v->set_x(LARGE_MONSTER_EXTENTS.x);
+		v->set_y(LARGE_MONSTER_EXTENTS.y);
+		v->set_z(LARGE_MONSTER_EXTENTS.z);
+	}
+	{
+		pkt.set_smallmonsterradius(SMALL_MONSTER_RADIUS);
+	}
+	
+
+	SendBufferRef sendBuffer = ServerPacketHandler::MakeSendBuffer(pkt);
+	session->Send(sendBuffer);
+}
+
+void GameRoom::AddTrash(uint64 id)
+{
+	_trasheIDs.push_back(id);
+}
+
+void GameRoom::CheckCollision(GameObjectRef movingObj, Vec3 moveDir, OUT bool& collided)
+{
+	collided = false;
 
 	vector<shared_ptr<BaseCollider>> colliders;
-	const BoundingCube& cube = player->GetBoundingCube();
+	const BoundingCube& cube = movingObj->GetBoundingCube();
 	vector<shared_ptr<GameObject>>& objects = GetBoundingObjects(cube);
 
 	for (const shared_ptr<GameObject>& object : objects)
 	{
 		if (object->GetCollider() == nullptr)
 			continue;
-		if (object->GetInfo().objectid() == player->GetInfo().objectid())
+		if (object->GetInfo().objectid() == movingObj->GetInfo().objectid())
 			continue;
+
 		colliders.push_back(object->GetCollider());
 	}
 
-	for (auto& other : colliders)
+	for (shared_ptr<BaseCollider>& other : colliders)
 	{
-		if (player->GetCollider()->Intersects(other))
+		if (movingObj->GetCollider()->Intersects(other))
 		{
-			_collided = true;
+			// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾î°¡ ï¿½ï¿½ï¿½ï¿½ï¿½Ì·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½æµ¹Ã¼ï¿½ï¿½ ï¿½ß½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Í¿ï¿½ 
+			// 90ï¿½ï¿½ ï¿½Ì»ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½×³ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+			Vec3 v = other->GetColliderCenter();
+			v = v - movingObj->GetWorldPos();
+			v.Normalize();
+			if (v.Dot(moveDir) <= 0.f)
+				continue;
+
+			collided = true;
 			return;
 		}
 	}
-	_collided = false;
+	collided = false;
 }
+
+void GameRoom::CheckCollision(ProjectileRef movingObj, OUT bool& collided, OUT GameObjectRef& target)
+{
+	collided = false;
+
+	vector<shared_ptr<BaseCollider>> colliders;
+	const BoundingCube& cube = movingObj->GetBoundingCube();
+	vector<shared_ptr<GameObject>>& objects = GetBoundingObjects(cube);
+
+	for (const shared_ptr<GameObject>& object : objects)
+	{
+		if (object->GetObjectType() != ObjectType::OBJECT_TYPE_SMALL_MONSTER &&
+			object->GetObjectType() != ObjectType::OBJECT_TYPE_LARGE_MONSTER)
+		{
+			continue;
+		}
+		if (object->GetCollider() == nullptr)
+			continue;
+		
+		colliders.push_back(object->GetCollider());
+	}
+
+	for (shared_ptr<BaseCollider>& other : colliders)
+	{
+		if (movingObj->GetCollider()->Intersects(other))
+		{
+			collided = true;
+			target = other->GetGameObject();
+			return;
+		}
+	}
+	collided = false;
+}
+
+
+
 
 

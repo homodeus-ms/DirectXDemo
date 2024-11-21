@@ -1,10 +1,12 @@
 #include "pch.h"
 #include "DevApp1.h"
+#include "Scene.h"
 #include "Shader.h"
 #include "GameObject.h"
 #include "Camera.h"
 #include "CameraScript.h"
 #include "ModelRenderer.h"
+#include "ModelAnimation.h"
 #include "Material.h"
 #include "Transform.h"
 #include "Model.h"
@@ -22,83 +24,118 @@
 #include "CharacterMoveScript.h"
 #include "NetworkManager.h"
 #include "Player.h"
+#include "MyPlayer.h"
+#include "Projectile.h"
 #include "ClientObject.h"
 #include "Prop.h"
 #include "BoundingCube.h"
+#include "MyCamera.h"
+#include "NetworkLogger.h"
+#include "ObjectCreator.h"
 
-shared_ptr<GameObject> tempObj = nullptr;
+// ì˜¤í”„ë¼ì¸ ë””ë²„ê·¸ ìš© í”Œëž˜ê·¸
+//#define OFFLINE_DEBUG 
+
+DevApp1::DevApp1()
+{
+	_devScene = CUR_SCENE;
+}
+
+DevApp1::~DevApp1()
+{
+	if (_objectCreator != nullptr)
+	{
+		delete _objectCreator;
+		_objectCreator = nullptr;
+	}
+}
 
 void DevApp1::Init()
 {
 	Sleep(300);
 
+#ifndef OFFLINE_DEBUG
 	GET_SINGLE(NetworkManager)->Init();
+#endif
 	_shader = make_shared<Shader>(L"20. ViewportDemo.fx");
-
-	// Prop Model ·Îµå
-
-	_containerModel = make_shared<Model>();
-	_containerModel->ReadModel(L"Container/Container");
-	_containerModel->ReadMaterial(L"Container/Container");
-
-	_towerModel = make_shared<Model>();
-	_towerModel->ReadModel(L"Tower/Tower");
-	_towerModel->ReadMaterial(L"Tower/Tower");
-
-
-	/*CreatePlayer();
-	CreateCamera();
-	CreateLight();*/
-	
-	//CreateContainers();
-	//CreateTowers();
-
-	//CreateManyCubes();
-
+	_objectCreator = new ObjectCreator(_shader);
 	
 
-	
+#ifdef OFFLINE_DEBUG
+	Protocol::ObjectInfo info;
+	info.set_objectid(1 | (1 << 32));
+	info.set_state(IDLE);
+	Protocol::MoveStat* moveStat = info.mutable_movestat();
+	{
+		moveStat->set_posx(static_cast<float>(200));
+		moveStat->set_posy(static_cast<float>(0));
+		moveStat->set_posz(static_cast<float>(200));
+		moveStat->set_lookx(0);
+		moveStat->set_looky(0);
+		moveStat->set_lookz(1);
+		moveStat->set_rotatex(0);
+		moveStat->set_rotatey(3.14f);
+		moveStat->set_rotatez(0);
+		moveStat->set_collided(false);
+		moveStat->set_speed(5);
+	}
+	auto player = _objectCreator->CreatePlayer(info, true);
+
+	assert(player != nullptr);
+	_objectCreator->CreateCamera(static_pointer_cast<MyPlayer>(player));
+	_objectCreator->CreateLight();
+
+	CUR_SCENE->Start();
+
+#endif
+	// For Test
+	// CreateManyCubes();
 }
 
 void DevApp1::Update()
 {
-	GET_SINGLE(NetworkManager)->Update();
 
+#ifndef OFFLINE_DEBUG
+	GET_SINGLE(NetworkManager)->Update();
+#endif
+	
+	// ImGui ì²´í¬
+	// Frustum Calling Check
+
+	ImGui::Begin("Frustum", nullptr);
+
+	ImGui::Text("%s(%d), %s(%d), %s(%d), %s(%d))", 
+		"TotalObject ", CUR_SCENE->_totalObjectCount, 
+		"1stCulled ", CUR_SCENE->_firstCulledCount,
+		"CulledObject ", CUR_SCENE->_culledCount, 
+		"FPS ", TIME->GetFps());
+
+	if (GetMyPlayer() == nullptr)
+	{
+		ImGui::End();
+		return;
+	}
+
+	auto _camera = GetMyPlayer()->GetMyCamera();
+	auto _player = GetMyPlayer();
+	
 	if (_camera != nullptr)
 	{
 		auto pt = _player->GetTransform();
 		auto ct = _camera->GetTransform();
 		Vec3 playerPos = pt->GetWorldPosition();
 		Vec3 cameraPos = ct->GetWorldPosition();
+		Vec3 cameraLocalPos = ct->GetLocalPosition();
 		Vec3 angle = ct->GetLocalRotation();
 
-		ImGui::Begin("CamDebug", nullptr);
-		//ImGui::Text("%s : %f, %f, %f", "cameraPos", cameraPos.x, cameraPos.y, cameraPos.z);
 		ImGui::Text("%s : %f, %f, %f", "playerPos", playerPos.x, playerPos.y, playerPos.z);
 		ImGui::Text("%s : %f, %f, %f", "cameraPos", cameraPos.x, cameraPos.y, cameraPos.z);
+		ImGui::Text("%s : %f, %f, %f", "cameraLocalPos", cameraLocalPos.x, cameraLocalPos.y, cameraLocalPos.z);
 		ImGui::Text("%s : %f, %f, %f", "cameraRotate", angle.x, angle.y, angle.z);
 
-		
-		auto script = _player->GetScript();
-		Vec3 v = script->_keepCameraPos;
-		ImGui::Text("%s : %f, %f, %f", "originCamPos", v.x, v.y, v.z);
+	} 
 
-		Vec3 OtherPlayerPos;
-		for (auto& obj : _objects)
-		{
-			uint64 id = obj->GetID();
-			if ((id >> 32) == ObjectType::OBJECT_TYPE_PLAYER && id != _player->GetID())
-			{
-				OtherPlayerPos = obj->GetTransform()->GetWorldPosition();
-				break;
-			}
-		}
-		
-		ImGui::Text("%s : %f, %f, %f", "OtherPlayer", OtherPlayerPos.x, OtherPlayerPos.y, OtherPlayerPos.z);
-
-		ImGui::End();
-	}
-
+	ImGui::End();
 }
 
 void DevApp1::Render()
@@ -109,16 +146,51 @@ void DevApp1::MakeMyPlayer(const Protocol::S_MyPlayer& pkt)
 {
 	const ObjectInfo& info = pkt.info();
 
-	_player = CreatePlayer(info, true);
-	_player->SetInfo(info);
-	CreateCamera();
-	CreateLight();
+	shared_ptr<GameObject> player = _objectCreator->CreatePlayer(info, true);
+	
+	assert(player != nullptr);
+	_objectCreator->CreateCamera(static_pointer_cast<MyPlayer>(player));
+	_objectCreator->CreateLight();
+
 	CUR_SCENE->Start();
+}
+
+void DevApp1::HandleS_StartInfos(const Protocol::S_StartInfos& pkt)
+{
+	{
+		const Protocol::Vector3& v = pkt.playerextents();
+		_objectCreator->PLAYER_EXTENTS.x = v.x();
+		_objectCreator->PLAYER_EXTENTS.y = v.y();
+		_objectCreator->PLAYER_EXTENTS.z = v.z();
+	}
+	{
+		const Protocol::Vector3& v = pkt.containerextents();
+		_objectCreator->CONTAINER_EXTENTS.x = v.x();
+		_objectCreator->CONTAINER_EXTENTS.y = v.y();
+		_objectCreator->CONTAINER_EXTENTS.z = v.z();
+	}
+	{
+		const Protocol::Vector3& v = pkt.towerextents();
+		_objectCreator->TOWER_EXTENTS.x = v.x();
+		_objectCreator->TOWER_EXTENTS.y = v.y();
+		_objectCreator->TOWER_EXTENTS.z = v.z();
+	}
+	{
+		const Protocol::Vector3& v = pkt.largemonsterextents();
+		_objectCreator->LARGE_MONSTER_EXTENTS.x = v.x();
+		_objectCreator->LARGE_MONSTER_EXTENTS.y = v.y();
+		_objectCreator->LARGE_MONSTER_EXTENTS.z = v.z();
+	}
+	{
+		_objectCreator->SMALL_MONSTER_RADIUS = pkt.smallmonsterradius();
+	}
+
+
 }
 
 void DevApp1::HandleAddObject(const Protocol::S_AddObject& pkt)
 {
-	uint64 myPlayerId = _player->GetInfo().objectid();
+	uint64 myPlayerId = GetMyPlayerID();
 	const int32 objectCount = pkt.objects_size();
 
 	for (int32 i = 0; i < objectCount; ++i)
@@ -130,7 +202,7 @@ void DevApp1::HandleAddObject(const Protocol::S_AddObject& pkt)
 			continue;
 		}
 
-		// [¾Õ32ºñÆ® : ¿ÀºêÁ§Æ®Å¸ÀÔ   |   µÚ32ºñÆ® : ¿ÀºêÁ§Æ® ¾ÆÀÌµð]
+		// [ï¿½ï¿½32ï¿½ï¿½Æ® : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®Å¸ï¿½ï¿½   |   ï¿½ï¿½32ï¿½ï¿½Æ® : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½Ìµï¿½]
 		uint64 id = info.objectid();
 		ObjectType objectType = static_cast<ObjectType>((id >> 32));
 
@@ -138,8 +210,7 @@ void DevApp1::HandleAddObject(const Protocol::S_AddObject& pkt)
 		{
 		case ObjectType::OBJECT_TYPE_PLAYER:
 		{
-			shared_ptr<ClientObject> player = static_pointer_cast<ClientObject>(CreatePlayer(info, false));
-			_objects.push_back(player);
+			shared_ptr<ClientObject> player = static_pointer_cast<ClientObject>(_objectCreator->CreatePlayer(info, false));
 			break;
 		}
 		case ObjectType::OBJECT_TYPE_PROP_CONTAINER:
@@ -152,6 +223,58 @@ void DevApp1::HandleAddObject(const Protocol::S_AddObject& pkt)
 			CreateTower(info);
 			break;
 		}
+		case ObjectType::OBJECT_TYPE_SMALL_MONSTER:
+		{
+			CreateSmallMonster(info);
+			break;
+		}
+		case ObjectType::OBJECT_TYPE_LARGE_MONSTER:
+		{
+			CreateLargeMonster(info);
+			break;
+		}
+		case ObjectType::OBJECT_TYPE_PROJECTILE:
+		{
+			CreateProjectile(info);
+			break;
+		}
+		}
+	}
+	
+	unordered_map<uint64, shared_ptr<GameObject>> objects = CUR_SCENE->GetObjects();
+	
+}
+
+void DevApp1::HandleS_RemoveObject(const Protocol::S_RemoveObject& pkt)
+{
+	int32 size = pkt.ids().size();
+	uint64 myPlayerID = GetMyPlayerID();
+
+	for (uint64 id : pkt.ids())
+	{
+		if (id == myPlayerID)
+		{
+			return;
+		}
+
+		if ((id >> 32) == ObjectType::OBJECT_TYPE_PROJECTILE)
+		{
+			uint64 myBallID = GetMyPlayer()->GetSphereBall()->GetID();
+
+			if (id == myBallID)
+			{
+				GetMyPlayer()->DisappearShootBall();
+			}
+			else
+			{
+				shared_ptr<GameObject> obj = GetTemporalObject(id);
+				_devScene->RemoveTemoporalObject(obj);
+				DeleteTemporalObject(id);
+			}
+		}
+		else
+		{
+			_devScene->Remove(id);
 		}
 	}
 	
@@ -162,173 +285,286 @@ void DevApp1::HandleS_Move(const Protocol::S_Move& pkt)
 	uint64 id = pkt.id();
 	ObjectType objectType = static_cast<ObjectType>((id >> 32));
 
-	if (_player->GetID() == id)
+	if (IsMyPlayer(id))
 	{
+		shared_ptr<MyPlayer> myPlayer = GetMyPlayer();
+
 		if (pkt.movestat().collided() == true)
 		{
-			_player->CancelMove(pkt);
-			
+			myPlayer->SetCollide(true);
+			myPlayer->HandleCollided(pkt);
+			myPlayer->SetState(IDLE, true);
 		}
-		return;
-	}
-
-	shared_ptr<ClientObject> movedPlayer = static_pointer_cast<ClientObject>(FindObject(id));
-	if (movedPlayer == nullptr)
-	{
-		assert(false);
-		return;
-	}
-
-	movedPlayer->GetScript()->CancelMove(pkt);
-}
-
-shared_ptr<GameObject> DevApp1::FindObject(uint64 id)
-{
-	for (auto& object : _objects)
-	{
-		if (object->GetID() == id)
+		else
 		{
-			return object;
+			myPlayer->UpdateMoveInfo(pkt);
+		}
+		
+		return;
+	}
+
+	shared_ptr<ClientObject> obj = FindObject(id);
+	obj->SetState(MOVE, false);
+	obj->UpdateMoveInfo(pkt);
+}
+
+void DevApp1::HandleS_ChangeState(const Protocol::S_ChangeState& pkt)
+{
+	uint64 id = pkt.id();
+	if (IsMyPlayer(id))
+		return;
+
+	shared_ptr<ClientObject> obj = FindObject(id);
+
+	obj->SetState(pkt.state(), false);
+
+	// Å°ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ù°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ù·ï¿½ IDLEï¿½ï¿½Å¶ï¿½ï¿½ ï¿½Ù½ï¿½ ï¿½ï¿½ï¿½Æ¿ï¿½ï¿½Ç·ï¿½ 
+	// infoï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ transformï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+	if (pkt.state() == IDLE)
+	{
+		obj->SyncTransformPosWithInfo();
+	}
+}
+
+void DevApp1::HandleS_ChangeDir(const Protocol::S_ChangeDir& pkt)
+{
+	uint64 id = pkt.id();
+	if (IsMyPlayer(id))
+		return;
+
+	shared_ptr<ClientObject> obj = FindObject(id);
+
+	obj->RotateYaw(pkt.yaw());
+}
+
+void DevApp1::HandleS_Skill(const Protocol::S_Skill& pkt)
+{
+	uint64 id = pkt.id();
+	if (IsMyPlayer(id))
+		return;
+
+	shared_ptr<ClientObject> obj = FindObject(pkt.id());
+	obj->SetState(SKILL, false);
+	obj->SetSkillReady();
+	
+}
+
+void DevApp1::HandleS_SpecialSkill(const Protocol::S_SpecialSkill& pkt)
+{
+	uint64 id = pkt.id();
+	if (IsMyPlayer(id))
+		return;
+
+	shared_ptr<ClientObject> obj = FindObject(pkt.id());
+	obj->SetState(SPECIAL_SKILL, false);
+	obj->SetSkillReady();
+}
+
+void DevApp1::HandleS_CreateProjectile(const Protocol::S_CreateProjectile& pkt)
+{
+	uint64 ownerId = pkt.ownerid();
+
+	// ï¿½ß»ï¿½ ï¿½ï¿½Æ° ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ã¿ï¿½ MyPlayerï¿½ï¿½ Projectileï¿½ï¿½ ï¿½Ì¹ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	if (ownerId == GetMyPlayerID())
+	{
+		GetMyPlayer()->GetSphereBall()->SetID(pkt.projectileid());
+		return;
+	}
+
+	// TODO : Projectile ï¿½ß°ï¿½
+	if (pkt.type() != ProjectileType::PROJECTILE_SPHERE_BALL)
+		return;
+
+	// ï¿½ß»ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼ï¿½ï¿½ ï¿½Æ´ï¿½ ï¿½Ù¸ï¿½ Playerï¿½ï¿½ï¿½ï¿½ È­ï¿½ï¿½
+	shared_ptr<ClientObject> obj = FindObject(ownerId);
+	shared_ptr<MyPlayer> owner = static_pointer_cast<MyPlayer>(obj);
+	ASSERT_CRASH(owner != nullptr, "HandleS_CreateProjectile, owner is nullptr");
+
+	Vec3 pos = { pkt.startpos().x(), pkt.startpos().y(), pkt.startpos().z() };
+	Vec3 dir = { pkt.dir().x(), pkt.dir().y(), pkt.dir().z() };
+
+	shared_ptr<Projectile> projectile = _objectCreator->GetSphereBall(pos, dir);
+	projectile->SetID(pkt.projectileid());
+	AddTemporalObject(pkt.projectileid(), projectile);
+	
+	SetSphereBallOn(projectile);
+}
+
+void DevApp1::CheckCollision(shared_ptr<ClientObject> player, Vec3 moveDir, OUT bool& collided)
+{
+	collided = false;
+
+	vector<shared_ptr<BaseCollider>> colliders;
+	const BoundingCube& cube = player->GetCollisionBoundingCube();
+	vector<shared_ptr<GameObject>>& objects = CUR_SCENE->GetBoundingObjects(cube);
+
+	for (const shared_ptr<GameObject>& obj : objects)
+	{
+		shared_ptr<ClientObject> object = static_pointer_cast<ClientObject>(obj);
+
+		if (object->GetCollider() == nullptr)
+			continue;
+		if (object->GetInfo().objectid() == player->GetInfo().objectid())
+			continue;
+		colliders.push_back(object->GetCollider());
+	}
+
+	for (shared_ptr<BaseCollider>& other : colliders)
+	{
+		if (player->GetCollider()->Intersects(other))
+		{
+			// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾î°¡ ï¿½ï¿½ï¿½ï¿½ï¿½Ì·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½æµ¹Ã¼ï¿½ï¿½ ï¿½ß½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Í¿ï¿½ 
+			// 90ï¿½ï¿½ ï¿½Ì»ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½×³ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+			Vec3 v = other->GetColliderCenter();
+			v = v - player->GetWorldPos();
+			v.Normalize();
+			if (v.Dot(moveDir) <= 0.f)
+				continue;
+
+			collided = true;
+			return;
 		}
 	}
-	return nullptr;
+	collided = false;
+}
+
+shared_ptr<ClientObject> DevApp1::FindObject(uint64 id)
+{
+	shared_ptr<GameObject> obj = _devScene->FindObject(id);
+	if (obj == nullptr)
+		return nullptr;
+
+	return static_pointer_cast<ClientObject>(obj);
 }
 
 
-
-void DevApp1::CreateCamera()
+bool DevApp1::IsMyPlayer(uint64 id)
 {
-	auto camera = make_shared<GameObject>();
+	return GetMyPlayerID() == id;
+}
+
+shared_ptr<MyPlayer> DevApp1::GetMyPlayer()
+{
+	return static_pointer_cast<MyPlayer>(_devScene->GetMyPlayer());
+}
+
+uint64 DevApp1::GetMyPlayerID()
+{
+	return GetMyPlayer()->GetID();
+}
+
+shared_ptr<Projectile> DevApp1::GetSphereBall(shared_ptr<GameObject> player)
+{
+	return _objectCreator->GetSphereBall(player);
+}
+
+void DevApp1::SetTargetMarkOn(const Vec3& pos)
+{
+	shared_ptr<GameObject> targetMarker = _objectCreator->GetTargetMarker();
+	targetMarker->GetTransform()->SetWorldPosition(pos);
+	Matrix matRotateY = GetLookCameraMatrix(targetMarker);
 	
-	assert(_player != nullptr);
-	Vec3 playerPos = _player->GetTransform()->GetWorldPosition();
+	targetMarker->GetTransform()->SetRotation(matRotateY);
 
-	camera->GetTransform()->SetWorldPosition(playerPos + Vec3(0.f, 5.f, -10.f));
-	camera->GetTransform()->SetWorldRotation(Vec3(0.3f, 0.f, 0.f));
-	camera->AddComponent(make_shared<Camera>());
-	//camera->AddComponent(make_shared<CameraScript>());
-
-	_camera = camera;
-
-	CUR_SCENE->Add(camera);
+	CUR_SCENE->AddTemproalObject(targetMarker);
 }
 
-void DevApp1::CreateLight()
+void DevApp1::SetSphereBallOn(shared_ptr<GameObject> sphereBall)
 {
-	auto light = make_shared<GameObject>();
-	light->AddComponent(make_shared<Light>());
-
-	LightDesc desc;
-	desc.ambient = Vec4(0.8f);
-	desc.diffuse = Vec4(1.f);
-	desc.specular = Vec4(1.f);
-	desc.direction = Vec3(1.f, 0.f, 1.f);
-	light->GetLight()->SetLightDesc(desc);
-
-	_light = light;
-
-	CUR_SCENE->Add(light);
+	CUR_SCENE->AddTemproalObject(sphereBall);
 }
 
-shared_ptr<Player> DevApp1::CreatePlayer(const ObjectInfo& info, bool myPlayer)
+void DevApp1::SetTargetMarkOff()
 {
-	// Animation Character
-	shared_ptr<Model> m1 = make_shared<Model>();
-	m1->ReadModel(L"Kachujin/Kachujin");
-	m1->ReadMaterial(L"Kachujin/Kachujin");
-	m1->ReadAnimation(L"Kachujin/Idle");
-	m1->ReadAnimation(L"Kachujin/Run");
-	m1->ReadAnimation(L"Kachujin/Slash");
+	CUR_SCENE->RemoveTemoporalObject(_objectCreator->GetTargetMarker());
+}
 
-	Protocol::MoveStat stat = info.movestat();
+void DevApp1::SetSphereBallOff(shared_ptr<GameObject> sphereBall)
+{
+	CUR_SCENE->RemoveTemoporalObject(sphereBall);
+}
 
-	auto obj = make_shared<Player>();
+void DevApp1::AddTemporalObject(uint64 id, shared_ptr<GameObject> obj)
+{
+	_temporalObjects[id] = obj;
+}
 
-	obj->SetInfo(info);
-	obj->GetTransform()->SetWorldPosition(Vec3(stat.posx(), stat.posy(), stat.posz()));
-	obj->GetTransform()->SetWorldScale(Vec3(0.01f));
-	obj->GetTransform()->SetLocalRotation(Vec3(stat.rotatex(), stat.rotatey(), stat.rotatez()));
+void DevApp1::DeleteTemporalObject(uint64 id)
+{
+	_temporalObjects.erase(id);
+}
 
-	obj->AddComponent(make_shared<ModelAnimator>(_shader));
-
-	obj->GetModelAnimator()->SetModel(m1);
-	obj->GetModelAnimator()->SetRenderPass(ANIM_RENDER);
-
-	auto script = make_shared<CharacterMoveScript>(stat.speed(), ROTATE_SPEED);
-	obj->AddComponent(script);
-	obj->SetMoveScript(script);
-	script->SetOwner(obj);
-
-	if (myPlayer)
-	{
-		
-
-		auto gameObject = static_pointer_cast<GameObject>(obj);
-		CUR_SCENE->SetPlayer(gameObject);
-	}
-
-	auto animator = obj->GetModelAnimator();
-	auto& desc = animator->GetTweenDesc();
-	desc.currAnim.speed = ANIM_FRAME_SPEED;
-	desc.nextAnim.speed = ANIM_FRAME_SPEED;
-
-	CUR_SCENE->Add(obj);
+shared_ptr<GameObject> DevApp1::GetTemporalObject(uint64 id)
+{
+	shared_ptr<GameObject> obj = nullptr;
+	obj = _temporalObjects[id];
+	ASSERT_CRASH(obj != nullptr, "_temporalObjects[id] is nullptr");
 
 	return obj;
 }
 
+Matrix DevApp1::GetLookCameraMatrix(shared_ptr<GameObject> obj)
+{
+	shared_ptr<Transform> cameraTr = CUR_SCENE->GetCamera()->GetTransform();
+	shared_ptr<Transform> objTr = obj->GetTransform();
+	Vec3 objPos = objTr->GetWorldPosition();
+
+	Vec3 look = cameraTr->GetWorldPosition() - objPos;
+	look *= -1;
+	look.Normalize();
+	Vec3 up = Vec3::Up;
+	Vec3 right = up.Cross(look);
+	right.Normalize();
+	up = look.Cross(right);
+	up.Normalize();
+	
+	Matrix mat = 
+	{
+		right.x, right.y, right.z, 0.0f,
+		up.x, up.y, up.z, 0.0f,
+		look.x, look.y, look.z, 0.0f,
+		objPos.x, objPos.y, objPos.z, 1.0f
+	};
+
+	return mat;
+}
+
+
 shared_ptr<GameObject> DevApp1::CreateContainer(const ObjectInfo& info)
 {
-	auto obj = make_shared<Prop>(ObjectType::OBJECT_TYPE_PROP_CONTAINER);
-
-	Protocol::MoveStat stat = info.movestat();
-	obj->SetInfo(info);
-
-	obj->GetTransform()->SetWorldPosition(Vec3(stat.posx(), stat.posy(), stat.posz()));
-	obj->GetTransform()->SetWorldScale(Vec3(0.01f));
-	obj->GetTransform()->SetLocalRotation(Vec3(stat.rotatex(), stat.rotatey(), stat.rotatez()));
-
-	obj->AddComponent(make_shared<ModelRenderer>(_shader));
-	obj->GetModelRenderer()->SetModel(_containerModel);
-	obj->GetModelRenderer()->SetRenderPass(MODEL_RENDER);
-
-	CUR_SCENE->Add(obj);
-
-
-	_objects.push_back(static_pointer_cast<ClientObject>(obj));
+	shared_ptr<GameObject> obj = _objectCreator->CreateContainer(info);
 
 	return obj;
 }
 
 shared_ptr<GameObject> DevApp1::CreateTower(const ObjectInfo& info)
 {
-	auto obj = make_shared<Prop>(ObjectType::OBJECT_TYPE_PROP_TOWER);
-
-	Protocol::MoveStat stat = info.movestat();
-	obj->SetInfo(info);
-
-	obj->GetTransform()->SetWorldPosition(Vec3(stat.posx(), stat.posy(), stat.posz()));
-	obj->GetTransform()->SetWorldScale(Vec3(0.01f));
-	obj->GetTransform()->SetLocalRotation(Vec3(stat.rotatex(), stat.rotatey(), stat.rotatez()));
-
-	obj->AddComponent(make_shared<ModelRenderer>(_shader));
-	obj->GetModelRenderer()->SetModel(_towerModel);
-	obj->GetModelRenderer()->SetRenderPass(MODEL_RENDER);
-
-	CUR_SCENE->Add(obj);
-
-	
-	_objects.push_back(static_pointer_cast<ClientObject>(obj));
+	shared_ptr<GameObject> obj = _objectCreator->CreateTower(info);
 
 	return obj;
 }
 
+shared_ptr<GameObject> DevApp1::CreateSmallMonster(const ObjectInfo& info)
+{
+	shared_ptr<GameObject> obj = _objectCreator->CreateSmallMonster(info);
 
+	return obj;
+}
+
+shared_ptr<GameObject> DevApp1::CreateLargeMonster(const ObjectInfo& info)
+{
+	return shared_ptr<GameObject>();
+}
+
+shared_ptr<GameObject> DevApp1::CreateProjectile(const ObjectInfo& info)
+{
+	return shared_ptr<GameObject>();
+}
 
 void DevApp1::CreateManyCubes()
 {
 
-	for (int i = 0; i < 4000; ++i)
+	for (int i = 0; i < 3000; ++i)
 	{
 		shared_ptr<Material> material = make_shared<Material>();
 		material->SetShader(_shader);
@@ -342,14 +578,38 @@ void DevApp1::CreateManyCubes()
 
 		auto mesh = RESOURCE->GetBox();
 
-		auto obj = make_shared<GameObject>();
+		auto obj = make_shared<ClientObject>(ObjectType::OBJECT_TYPE_SMALL_MONSTER);
+
+		static int32 tempID = 300;
+		obj->GetInfo().set_objectid(tempID++);
 		
-		obj->GetTransform()->SetLocalPosition(Vec3(rand() % 2000 - 1000, 0.f, rand() % 2000 - 1000));
+		if (i < 20)
+		{
+			obj->GetTransform()->SetLocalPosition(Vec3((rand() % 50 - 25) + 200, 0.f, (rand() % 50 - 25) + 200));
+			
+		}
+		else if (i < 1000)
+		{
+			obj->GetTransform()->SetLocalPosition(Vec3((rand() % 200 - 100) + 200, 0.f, (rand() % 200 - 100) + 200));
+		}
+		else
+		{
+			obj->GetTransform()->SetLocalPosition(Vec3((rand() % 300 - 300) + 100, 0.f, (rand() % 300 - 300) + 100));
+		}
+		
 		obj->AddComponent(make_shared<MeshRenderer>(mesh, material));
 		obj->GetMeshRenderer()->SetRenderPass(0);
 
+		// Collider
+		{
+			auto collider = make_shared<SphereCollider>();
+			collider->GetBoundingSphere().Center = obj->GetWorldPos();
+			collider->GetBoundingSphere().Radius = 1.f;
+			collider->SetGameObject(obj);
+			obj->AddComponent(collider);
+		}
 
-		CUR_SCENE->Add(obj);
+		CUR_SCENE->Add(obj->GetID(), obj);
 	}
 }
 

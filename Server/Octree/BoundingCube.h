@@ -9,9 +9,9 @@ public:
 	BoundingCube(const Vec3 mins, const Vec3 maxs);
 	
 	
-	uint32 GetWidth() { return _maxs.x - _mins.x; }
-	uint32 GetHeight() { return _maxs.y - _mins.y; }
-	uint32 GetDepth() { return (_maxs.z - _mins.z) / 2; }
+	uint32 GetWidth() { return static_cast<uint32>(_maxs.x - _mins.x); }
+	uint32 GetHeight() { return static_cast<uint32>(_maxs.y - _mins.y); }
+	uint32 GetDepth() { return static_cast<uint32>((_maxs.z - _mins.z) / 2); }
 
 	Vec3 GetMins() { return _mins; }
 	Vec3 GetMaxs() { return _maxs; }
