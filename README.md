@@ -66,7 +66,24 @@ GameRoom, MovePacketHandler, RttRecorder<br>
 
 <br>
 
+1. 옥트리 서치(최소 큐브 크기, 혹은 재귀 Depth로 깊이 제한)<br>
+2. 옥트리로 구현 했으나, 높이(y축)를 거의 사용하지 않는 다면 쿼드트리로 충분할 것 같습니다.<br>
+3. 클라쪽과 서버 양쪽에서 모두 충돌 검사를 하고 있습니다.
+   - 클라쪽에서 움직이려고 할 때 충돌 검사를 하고 충돌이 발생하면 아예 패킷을 보내지 않습니다.
+   - 그렇지만 최종 검증은 서버에서 해야 된다고 생각했습니다.<br>
+4. 충돌 검사와 관련된 함수들은 Directx의 라이브러리를 사용했습니다.<br>
 
+**<관련 클래스>**
+
+**엔진**
+
+Octree, BoundingCube<br>
+[Octree folder](Engine/Octree/)<br>
+
+Scene.cpp의 Frustum culling, Render 부분<br>
+[Scene.cpp, Update()](Engine/Scene/Scene.cpp#L37)<br>
+
+**서버**
 
 
 
