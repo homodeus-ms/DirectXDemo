@@ -138,6 +138,9 @@ GameRoom.cpp 파일에 있습니다. 위 코드와 거의 같습니다.<br>
 
 Picking 부분 &nbsp;[Picking](Client/ClientObject/MyPlayer.cpp#L235)<br>
 UpdateSkill부분 &nbsp;[UpdateSkill](Client/ClientObject/MyPlayer.cpp#L60)<br>
+Picking된 곳에 TargetMaker를 카메라쪽을 보게 회전하는 부분
+1. (Client/Main/DevApp1.cpp#L461)<br>
+2. (Client/Main/DevApp1.cpp#L506)<br>
 
 **서버**
 
