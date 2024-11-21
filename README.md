@@ -9,7 +9,7 @@
 **DirectX11 + IOCP 연동 습작 (제작중)**
 
 IOCP서버 코드와 코드에 대한 대략적인 설명은<br>
-[링크](https://github.com/homodeus-ms/IOCP-portfolio)&nbsp이쪽을 봐주시기 바랍니다.<br>
+[이전작업링크](https://github.com/homodeus-ms/IOCP-portfolio)&nbsp;이쪽을 봐주시기 바랍니다.<br>
 
 현재까지 이동 동기화, 충돌 처리, Picking, 타겟팅, 공격등이 구현 되었습니다.<br>
 
