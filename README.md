@@ -28,7 +28,40 @@ IOCP서버 코드와 코드에 대한 대략적인 설명은
 
 WASD로 클라이언트에서 먼저 움직이고 서버에서 Valid 움직임 체크 후 클라이언트에게 다시 응답하는 방식입니다.
 
-(ReadMe 업데이트 중)
+<br>
+
+![Move 방식](ReadMeImages/move.jpg)
+
+<br>
+
+<br>
+
+**관련 클래스**
+
+**엔진**
+
+[Octree.h](Engine/Octree/Octree.h) &nbsp;&nbsp; [Octree.cpp](Engine/Octree/Octree.cpp)
+<br>
+[BoundingCube.h](Engine/Octree/BoundingCube.h) &nbsp;&nbsp; [BoundingCube.cpp](Engine/Octree/BoundingCube.cpp)
+<br>
+
+**클라이언트**
+
+[Player.h](Client/ClientObject/Player.h) &nbsp;&nbsp; [Player.cpp](Client/ClientObject/Player.cpp) &nbsp;&nbsp; 클라이언트, Player
+<br>
+[MyPlayer.h](Client/ClientObject/MyPlayer.h) &nbsp;&nbsp; [MyPlayer.cpp](Client/ClientObject/MyPlayer.cpp) &nbsp;&nbsp; 클라이언트, MyPlayer
+<br>
+[DevApp1.h](Client/Main/DevApp1.h) &nbsp;&nbsp; [DevApp1.cpp](Client/Main/DevApp1.cpp) &nbsp;&nbsp; 클라이언트, DevApp1(총괄 클래스, DevScene같은)
+<br>
+
+**서버**
+
+[GameRoom.h](Server/Room/)
+
+
+
+
+
 
 
 
