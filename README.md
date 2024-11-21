@@ -83,7 +83,23 @@ Octree, BoundingCube<br>
 Scene.cpp의 Frustum culling, Render 부분<br>
 [Scene.cpp, Update()](Engine/Scene/Scene.cpp#L37)<br>
 
+**클라이언트**
+
+DepApp1.cpp의 충돌 처리 부분
+[DevApp1.cpp, CheckCollision()](Client/Main/DevApp1.cpp#393)<br>
+
 **서버**
+
+GameRoom.cpp 파일에 있습니다. 위 코드와 거의 같습니다.<br>
+
+<br>
+
+---
+
+<br>
+
+
+
 
 
 
