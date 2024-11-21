@@ -77,12 +77,14 @@ GameRoom, MovePacketHandler, RttRecorder<br>
 <br>
 
 **예상치 못했던 이슈와 해결**<br>
+
 <br>
-1. 키보드를 빠르게 연타했을 때 캐릭터가 충돌체 내부로 조금씩 움직이면서 들어가는 현상이 있었습니다.
-  - 키보드를 아주 빠르게 한 번만 눌러도 조금씩 이동하게 되는 것이 문제였습니다.
+
+1. 키보드를 빠르게 연타했을 때 캐릭터가 충돌체 내부로 조금씩 움직이면서 들어가는 현상이 있었습니다.<br>
+  - 키보드를 아주 빠르게 한 번만 눌러도 조금씩 이동하게 되는 것이 문제였습니다.<br>
     키보드를 처음 눌렀을 때와 pressing상태를 구분해서 분리함으로써 해결했습니다.<br>
 <br>
-2. 충돌을 일부러 자주 일으켰을 때 카메라 위치의 어긋나는 것을 발견 했습니다.
+2. 충돌을 일부러 자주 일으켰을 때 카메라 위치의 어긋나는 것을 발견 했습니다.<br>
   - Camera의 위치 업데이트를 LateUpdate()에서 하게 함으로써 해결했습니다.<br>
 
 <br>
@@ -103,7 +105,7 @@ DepApp1.cpp의 충돌 처리 부분
 [DevApp1.cpp, CheckCollision()](Client/Main/DevApp1.cpp#L393)<br>
 
 CharacterMoveScript 클래스
-[CharacterMoveScript의 Update()](Client/CharacterMoveScript.cpp#30)<br>
+[CharacterMoveScript의 Update()](Client/CharacterMoveScript.cpp#L30)<br>
 
 **서버**
 
