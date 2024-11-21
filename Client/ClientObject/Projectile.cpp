@@ -52,9 +52,9 @@ void Projectile::SetPos(Vec3 pos, Vec3 targetPos)
 	Vec3 playerWorldRotation = GetOwner()->GetTransform()->GetWorldRotation();
 
 	Matrix rotationMatrix = Matrix::CreateFromYawPitchRoll(
-		playerWorldRotation.y,   // yaw (YÃà È¸Àü)
-		playerWorldRotation.x,   // pitch (XÃà È¸Àü)
-		playerWorldRotation.z    // roll (ZÃà È¸Àü)
+		playerWorldRotation.y,   // yaw (Yì¶• íšŒì „)
+		playerWorldRotation.x,   // pitch (Xì¶• íšŒì „)
+		playerWorldRotation.z    // roll (Zì¶• íšŒì „)
 	);
 
 	Vec3 v = START_OFFSET;

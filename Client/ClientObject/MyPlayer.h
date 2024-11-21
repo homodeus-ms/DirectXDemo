@@ -53,12 +53,12 @@ private:
 	Vec3 _moveDir;
 	float _diff;
 	float _yaw;
-	// Move ��Ŷ ���� ����
-	
+
+	// Move 패킷 간격 조절
 	int32 _firstPackets = 5;
 	uint64 _prevSendTime;
 	
-	// Attack����
+	// Attack 관련
 	bool _bSkillPacketSent = false;
 
 	Vec3 _targetPos;

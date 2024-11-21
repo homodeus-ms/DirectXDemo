@@ -65,7 +65,8 @@ void MyPlayer::UpdateSkill()
 		SendSkillPacket(/* Send Timestamp for SpecialSkill */false);
 	}
 
-	// �÷��̾ Ÿ���� ���ϰ�
+	// 플레이어가 타겟을 향하게 
+	// TODO : 버그 발견
 	if (_bTargetOn && !_bRotateToTarget)
 	{
 		_bRotateToTarget = true;

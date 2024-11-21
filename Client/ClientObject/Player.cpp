@@ -151,7 +151,7 @@ void Player::DoJump()
 	else
 	{
 		//_camera->GoLerp(false);
-		// �ϴ� �浹 ����, y == 0 ����
+		
 		Vec3 pos = playerTransform->GetWorldPosition();
 		pos.y = 0;
 		playerTransform->SetWorldPosition(pos);

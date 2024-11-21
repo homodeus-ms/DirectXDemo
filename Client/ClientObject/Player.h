@@ -44,7 +44,6 @@ public:
 	AttackInfo GetAttackInfo() { return _attackInfo; }
 	uint64 GetLastSpecialSkillUseTime() { return _attackInfo.lastSpecialSkillUseTime; }
 
-	// Move ���� �Լ�
 	void SetLastSpecialSkillUseTime(uint64 now) { _attackInfo.lastSpecialSkillUseTime = now; }
 
 private:
@@ -69,7 +68,7 @@ private:
 	Vec3 _syncPos;
 	Vec3 _syncAngle;
 
-    // Jump����
+    // Jump 관련
 	const float JUMPING_MOVE_SPEED_DIFF = 1.5f;
 	const float JUMPING_UP_SPEED_DIFF = 3.5f;
 	

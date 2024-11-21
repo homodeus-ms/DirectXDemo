@@ -29,18 +29,18 @@
 ObjectCreator::ObjectCreator(shared_ptr<Shader> shader)
 	: _shader(shader)
 {
-	// Kachujin ·Îµå
+	// Kachujin ë¡œë“œ
 	{
 		_kachujin = make_shared<Model>();
 		_kachujin->ReadModel(L"Kachujin/Kachujin");
 		_kachujin->ReadMaterial(L"Kachujin/Kachujin");
 		_kachujin->ReadAnimation(L"Kachujin/Idle");
 		_kachujin->ReadAnimation(L"Kachujin/Run");
-		_kachujin->ReadAnimation(L"Kachujin/Slash");    // Index¹øÈ£ : ANIM_SKILL ´Ü¼ø°ø°Ý
-		_kachujin->ReadAnimation(L"Kachujin/Slash");    // Index¹øÈ£ : ANIM_SPECIAL_SKILL ±¤¿ª°ø°Ý
+		_kachujin->ReadAnimation(L"Kachujin/Slash");    // Indexë²ˆí˜¸ : Enumê°’ ANIM_SKILL ë‹¨ìˆœ ê³µê²© 
+		_kachujin->ReadAnimation(L"Kachujin/Slash");    // Indexë²ˆí˜¸ : Enumê°’ ANIM_SPECIAL_SKILL ê´‘ì—­ ê³µê²©
 	}
 
-	// Prop Model ·Îµå
+	// Prop Model ë¡œë“œ
 	{
 		_containerModel = make_shared<Model>();
 		_containerModel->ReadModel(L"Container/Container");
@@ -51,7 +51,7 @@ ObjectCreator::ObjectCreator(shared_ptr<Shader> shader)
 		_towerModel->ReadMaterial(L"Tower/Tower");
 	}
 
-	// SmallMonster ·Îµå
+	// SmallMonster ë¡œë“œ
 	{
 		shared_ptr<Material> material = make_shared<Material>();
 		material->SetShader(_shader);
@@ -66,7 +66,7 @@ ObjectCreator::ObjectCreator(shared_ptr<Shader> shader)
 		RESOURCE->Add(L"SmallMonster", material);
 	}
 
-	// Target Image ·Îµå
+	// Target Image ë¡œë“œ
 	{
 		shared_ptr<Material> material = make_shared<Material>();
 		material->SetShader(_shader);
@@ -83,7 +83,7 @@ ObjectCreator::ObjectCreator(shared_ptr<Shader> shader)
 		CreateTargetMarker();
 	}
 
-	// SphereBall Material ·Îµå
+	// SphereBall Material ë¡œë“œ
 	{
 		shared_ptr<Material> material = make_shared<Material>();
 		material->SetShader(_shader);

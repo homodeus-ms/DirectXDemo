@@ -30,15 +30,13 @@ public:
 	virtual void RotateY(uint64 id, bool toLeft, bool isMyMove) {}
 	void DoSync();
 
-	// Packet Send Helper �Լ���
+	// Packet Send Helper 함수들
 	void SendChangeState();
 	void SendMovePacket();
 	void SendChangeDirPacket(float yaw);
 	void SendSkillPacket(bool isSpecialSkill, uint64 timeStampForSpecialSkill = 0);
 	void SendCreateProjectilePacket(uint64 ownerId, ProjectileType type, Vec3 pos, Vec3 dir);
 
-
-	// ĳ���� ������ ����
 	void RotateYaw(float yaw);
 
 	// Getter
