@@ -41,6 +41,8 @@ WASD로 클라이언트에서 먼저 움직이고 서버에서 Valid 움직임 �
 
 **<관련 클래스>**
 
+<br>
+
 **엔진**
 
 Octree, BoundingCube<br>
@@ -89,11 +91,12 @@ GameRoom, MovePacketHandler, RttRecorder<br>
 
 **<관련 클래스>**
 
+<br>
+
 **엔진**
 
 Octree, BoundingCube<br>
 [Octree folder](Engine/Octree/)<br>
-
 Scene.cpp의 Frustum culling, Render 부분<br>
 [Scene.cpp, Update()](Engine/Scene/Scene.cpp#L37)<br>
 
@@ -101,8 +104,7 @@ Scene.cpp의 Frustum culling, Render 부분<br>
 
 DepApp1.cpp의 충돌 처리 부분
 [DevApp1.cpp, CheckCollision()](Client/Main/DevApp1.cpp#L393)<br>
-
-CharacterMoveScript 클래스
+CharacterMoveScript 클래스<br>
 [CharacterMoveScript의 Update()](Client/MoveScript/CharacterMoveScript.cpp#L30)<br>
 
 **서버**
@@ -120,14 +122,14 @@ GameRoom.cpp 파일에 있습니다. 위 코드와 거의 같습니다.<br>
 현재 까지는 마우스 왼쪽 클릭으로 타켓팅 후, 타겟 마크가 사라지기전에 F키를 눌러서 SphereBall을 던지고 맞추는 것만 구현이 되어 있습니다.<br>
 마우스 클릭 후 생기는 타겟 마크가 항상 카메라 쪽을 향해서 나타나게끔 Billboard 방식을 사용했습니다.<br>
 
+**<관련 클래스>**
 
+<br>
 
+**클라이언트**
 
-
-
-
-
-
+Picking 부분 &nbsp;[Picking](Client/ClientObject/MyPlayer.cpp#L235)<br>
+UpdateSkill부분 &nbsp;[UpdateSkill](Client/ClientObject/MyPlayer.cpp#L60)<br>
 
 
 
