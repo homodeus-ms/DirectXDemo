@@ -64,17 +64,11 @@ void ClientPacketHandler::Init()
 	};
 }
 
-uint64 ClientPacketHandler::GetTimeStamp()
-{
-	return chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count();
-}
-
-
 
 bool Handle_Invalid(PacketSessionRef& session, BYTE* buffer, int32 len)
 {
 	PacketHeader* header = reinterpret_cast<PacketHeader*>(buffer);
-	// todo.. 
+	// TODO : Invalid Packet 처리 
 	return false;
 }
 
@@ -93,7 +87,6 @@ bool Handle_S_MyPlayer(PacketSessionRef& session, Protocol::S_MyPlayer& pkt)
 
 bool Handle_S_AddObject(PacketSessionRef& session, Protocol::S_AddObject& pkt)
 {
-	//G_DevApp->EnqueuePacketFunc(&DevApp1::HandleAddObject, pkt);
 	G_DevApp->HandleAddObject(pkt);
 	int32 size = pkt.objects_size();
 	return true;
@@ -107,10 +100,6 @@ bool Handle_S_RemoveObject(PacketSessionRef& session, Protocol::S_RemoveObject& 
 
 bool Handle_S_Move(PacketSessionRef& session, Protocol::S_Move& pkt)
 {
-	/*if (G_DevApp->_logger != nullptr)
-		G_DevApp->_logger->Log(pkt);*/
-
-	//G_DevApp->EnqueuePacketFunc(&DevApp1::HandleS_Move, pkt);
 	G_DevApp->HandleS_Move(pkt);
 	return true;
 }
@@ -118,18 +107,12 @@ bool Handle_S_Move(PacketSessionRef& session, Protocol::S_Move& pkt)
 
 bool Handle_S_ChangeState(PacketSessionRef& session, Protocol::S_ChangeState& pkt)
 {
-	/*if (G_DevApp->_logger != nullptr)
-		G_DevApp->_logger->Log(pkt);*/
-
-	//G_DevApp->EnqueuePacketFunc(&DevApp1::HandleS_ChangeState, pkt);
 	G_DevApp->HandleS_ChangeState(pkt);
 	return true;
 }
 
 bool Handle_S_ChangeDir(PacketSessionRef& session, Protocol::S_ChangeDir& pkt)
 {
-	//G_DevApp->EnqueuePacketFunc(&DevApp1::HandleS_ChangeDir, pkt);
-
 	G_DevApp->HandleS_ChangeDir(pkt);
 	return true;
 }

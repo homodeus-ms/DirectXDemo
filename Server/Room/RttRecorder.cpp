@@ -60,7 +60,7 @@ void RttRecorder::Arrive(Protocol::Ping pkt)
 			float v = _rttRecords[id].V;
 			float count = _rttRecords[id].count;
 
-			// Æ¢´Â µ¥ÀÌÅÍ ½ºÅµ
+			// íŠ€ëŠ” ë°ì´í„° ìŠ¤í‚µ
 			float diff = (rtt - m) * (rtt - m);
 			if (diff > (THRESHOLD * v))
 			{

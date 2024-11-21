@@ -26,7 +26,7 @@ void MovePacketHandler::HandleMove(Protocol::C_TryMove pkt)
 	Vec3 delayedOffset;
 	CalculateNextPos(pkt);
 
-	// ÀÌ»óÇÑ ¿òÁ÷ÀÓÀÌ °¨Áö µÈ °æ¿ì
+	// ì´ìƒí•œ ì›€ì§ì„ì´ ê°ì§€ëœ ê²½ìš°
 	if (_collided)
 	{
 		cout << "Suspicious Move!" << endl;
@@ -38,10 +38,10 @@ void MovePacketHandler::HandleMove(Protocol::C_TryMove pkt)
 		return;
 	}
 
-	// »õ·Î¿î pos·Î °»½Å
+	// ìƒˆë¡œìš´ posë¡œ ê°±ì‹ 
 	player->UpdateInfo(pkt);
 
-	// Ãæµ¹ °Ë»ç
+	// ì¶©ëŒ ê²€ì‚¬
 	Protocol::MoveStat* movestat = pkt.mutable_movestat();
 	Vec3 targetPos = GetPosFromMoveStat(movestat);
 	Vec3 moveDir = GetDirNormal(targetPos, originPos);
@@ -91,7 +91,7 @@ void MovePacketHandler::CalculateNextPos(OUT Protocol::C_TryMove& pkt)
 
 	//cout << "DIFF: " << sqrt(diff) << " // PlayerSpeed: " << player->GetSpeed() << endl;
 
-	// ¹üÀ§¸¦ ¹ş¾î³­ ¿òÁ÷ÀÓ
+	// ë²”ìœ„ë¥¼ ë²—ì–´ë‚œ ì›€ì§ì„
 	if (diff > limit)
 	{
 		FillPos(moveStat, player->GetWorldPos());
@@ -99,7 +99,7 @@ void MovePacketHandler::CalculateNextPos(OUT Protocol::C_TryMove& pkt)
 	}
 	else
 	{
-		targetPos += offset;    // rttTimeÀ» °è»êÇØ¼­ ÀÌ ÆĞÅ¶ÀÌ µµÂøÇßÀ» ¶§ÀÇ Å¬¶óÂÊÀÇ pos¸¦ ÃßÁ¤
+		targetPos += offset;    // RTT í‰ê· ê°’ìœ¼ë¡œ ì´ íŒ¨í‚·ì´ ë„ì°©í•  ë•Œì˜ í´ë¼ìª½ì˜ posë¥¼ ì¶”ì •
 		FillPos(moveStat, targetPos);
 	}
 }

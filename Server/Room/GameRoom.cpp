@@ -77,10 +77,10 @@ void GameRoom::EnterRoom(GameSessionRef session)
 	session->SetSessionPlayer(player);
 	player->SetSession(session);
 
-	// ó�� ������ Collider���� Extents�������� ������
+	// 처음 들어오면 Collider들의 Extents 정보들을 보내줌
 	SendStartInfos(session, GetTimeStamp());
 
-	// ������ �÷��̾� ������ Ŭ���̾�Ʈ�� ���� (S_MyPlayer)
+	// 생성된 플레이어 정보를 클라이언트로 전송함 (MyPlayer)
 	{
 		Protocol::S_MyPlayer pkt;
 		*pkt.mutable_info() = player->GetInfo();
@@ -88,7 +88,7 @@ void GameRoom::EnterRoom(GameSessionRef session)
 		session->Send(sendBuffer);
 	}
 
-	// ������ Ŭ�󿡰� ���� �뿡 �����ϴ� ��� ������Ʈ ������ ��������(S_AddObject)
+	// 생성된 클라이언트에게 룸의 오브젝트 정보들을 전송해줌
 	{
 		SendObjects(session, _players);
 		SendObjects(session, _props);
@@ -174,7 +174,7 @@ void GameRoom::AddObject(GameObjectRef object)
 	_octreeRoot->Insert(object);
 
 
-	// �ű� ������Ʈ ���� ����
+	// 신규 오브젝트의 정보를 Broadcast
 
 	if (objectType == ObjectType::OBJECT_TYPE_PROJECTILE)
 	{
@@ -246,7 +246,7 @@ void GameRoom::RemoveObject(uint64 id)
 
 	_octreeRoot->Remove(gameObject);
 
-	// ������Ʈ Remove����� ����
+	// 오브젝트 Remove 사실을 Broadcast
 	{
 		Protocol::S_RemoveObject pkt;
 		pkt.add_ids(id);
@@ -604,8 +604,8 @@ void GameRoom::CheckCollision(GameObjectRef movingObj, Vec3 moveDir, OUT bool& c
 	{
 		if (movingObj->GetCollider()->Intersects(other))
 		{
-			// ���� ���� �÷��̾ �����̷��� ������ �浹ü�� �߽����� ���� ���Ϳ� 
-			// 90�� �̻��� ������� �׳� ���� ����
+			// 만약 현재 플레이어가 움직이려는 방향이 충돌체의 중심을 향하는 벡터와
+			// 90도 이상 각도의 방향이라면 그냥 가게 해줌 
 			Vec3 v = other->GetColliderCenter();
 			v = v - movingObj->GetWorldPos();
 			v.Normalize();

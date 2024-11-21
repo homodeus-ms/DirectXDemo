@@ -34,7 +34,7 @@ public:
 	
 
 
-	// ī�޶�� ����Ʈ �ϳ����� �ִ� ����
+	// 카메라와 라이트가 하나씩만 있다고 가정
 	shared_ptr<GameObject> GetCamera() { return _cameras.empty() ? nullptr : *_cameras.begin(); }
 	shared_ptr<GameObject> GetLight() { return _lights.empty() ? nullptr : *_lights.begin(); }
 	bool HasCollided() { return _collided; }

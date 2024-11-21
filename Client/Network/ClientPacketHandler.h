@@ -38,7 +38,7 @@ enum
 	
 };
 
-// Handler ÇÔ¼öµé
+// Handler í•¨ìˆ˜ë“¤
 bool Handle_Invalid(PacketSessionRef& session, BYTE* buffer, int32 len);
 bool Handle_S_StartInfos(PacketSessionRef& session, Protocol::S_StartInfos& pkt);
 bool Handle_S_MyPlayer(PacketSessionRef& session, Protocol::S_MyPlayer& pkt);
@@ -66,11 +66,8 @@ public:
 		return GPacketHandler[header->packetId](session, buffer, len);
 	}
 
-	// RTTÅ¸ÀÓ Ã¼Å©¸¦ À§ÇØ¼­ ChangeState ÆÐÅ¶¿¡ ½Ã°£Á¤º¸¸¦ °°ÀÌ º¸³¿
-	// ÇöÀç ½Ã°£À» °¡Á®¿À´Â ÇÔ¼ö
-	static uint64 GetTimeStamp();
 
-	// º¸³»´Â ÆÐÅ¶À» ¸¸µå´Â ÇÔ¼öµé
+	// Send íŒ¨í‚· ë§Œë“œëŠ” í•¨ìˆ˜ë“¤
 	static SendBufferRef MakeSendBuffer(Protocol::C_TryMove& pkt) { return MakeSendBuffer(pkt, C_TryMove); }
 	static SendBufferRef MakeSendBuffer(Protocol::C_ChangeState& pkt) { return MakeSendBuffer(pkt, C_ChangeState); }
 	static SendBufferRef MakeSendBuffer(Protocol::C_ChangeDir& pkt) { return MakeSendBuffer(pkt, C_ChangeDir); }

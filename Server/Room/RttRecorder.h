@@ -23,7 +23,7 @@ public:
 	RttData CalculateNewDatas(float oldM, float oldV, float oldCount, float newData);
 private:
 	
-	// Á¤±ÔºĞÆ÷ 90% ÀÌ³» °ª (z = 1.65 , ºĞ»êÀ¸·Î ºñ±³ÇÏ±â ¶§¹®¿¡ Á¦°ö)
+	// ì •ê·œë¶„í¬ 90% ì´ë‚´ ê°’ë§Œ ë°›ìŒ (90%ì˜ z = 1.65, ë¶„ì‚°ìœ¼ë¡œ ë¹„êµí•˜ê¸° ë•Œë¬¸ì— ì œê³± = 2.72)
 	const float THRESHOLD = 2.72f;
 	uint64 _sendTime;
 	uint64 _arriveTime;

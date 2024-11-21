@@ -12,8 +12,7 @@
 
 Scene::Scene()
 {
-	// ��ü ���带 �� �߶� ��Ʈ�� ���� ��Ʈ�� �����
-
+	// 전체 월드를 반 잘라서 옥트리 시작 루트를 잡아 줌
 	const Vec3 mins = { -ROOT_CUBE_X, -ROOT_CUBE_Y, -ROOT_CUBE_Z };
 	const Vec3 maxs = { ROOT_CUBE_X, ROOT_CUBE_Y, ROOT_CUBE_Z };
 	const Vec3 startCenter = { 0, 0, 0 };
@@ -67,7 +66,7 @@ void Scene::Update()
 		return;
 
 	BoundingFrustum frustum = _myCamera->GetCamera()->GetBoundingFrustum();
-	// ��Ʈ���� 1�������� �ɷ�����
+	// 옥트리로 1차 걸러내기
 	{
 		if (_player != nullptr)
 		{
@@ -108,17 +107,8 @@ void Scene::Update()
 
 	INSTANCING->Render(objects);
 
-	// TODO : Blend Object �׸���
+	// TODO : Blend Objects 처리
 
-	/*if (!_temporalBlendObjects.empty())
-	{
-		list<shared_ptr<GameObject>> v = _temporalBlendObjects;
-		for (shared_ptr<GameObject> obj : v)
-		{
-			auto renderer = obj->GetFixedComponent(ComponentType::MeshRenderer);
-			
-		}
-	}*/
 }
 
 void Scene::LateUpdate()
@@ -130,7 +120,7 @@ void Scene::LateUpdate()
 		pair.second->LateUpdate();
 	}
 
-	//CheckCollision();
+    // TODO : 나중에 이쪽으로 충돌 처리 코드를..
 }
 
 void Scene::Add(uint64 id, shared_ptr<GameObject> object)
@@ -236,11 +226,11 @@ shared_ptr<class GameObject> Scene::Pick(int32 screenX, int32 screenY)
 		if (gameObject->GetCollider() == nullptr)
 			continue;
 
-		// ViewSpace���� Ray ����
+		// ViewSpace에서 Ray 정의
 		Vec4 rayOrigin = Vec4(0.f, 0.f, 0.f, 1.f);
 		Vec4 rayDir = Vec4(viewX, viewY, 1.f, 0.f);
 
-		// World��
+		// World로
 		Vec3 worldRayOrigin = XMVector3TransformCoord(rayOrigin, invMatView);
 		Vec3 worldRayDir = XMVector3TransformNormal(rayDir, invMatView);
 		worldRayDir.Normalize();

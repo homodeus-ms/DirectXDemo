@@ -29,7 +29,7 @@ public:
 	
 	uint64 GetTimeStamp();
 	
-	// ���� ��Ŷ ó�� �Լ���
+	// 받은 패킷 처리 함수들
 	void ChangeState(Protocol::C_ChangeState pkt);
 	void TryMove(Protocol::C_TryMove pkt);
 	void AddObject(GameObjectRef object);
@@ -58,13 +58,19 @@ public:
 	
 	
 private:
-	// ���� Const ����
+	// Consts
 	enum 
 	{ 
 		MAX_TOWER_COUNT = 100, 
 		MAX_CONTAINER_COUNT = 100, 
 		MAX_SMALL_MONSTER_COUNT = 80,
 		RANDOM_MAX = 300, 
+	};
+	enum
+	{
+		WORLD_SIZE = 301,
+		WORLD_SIZE_MIN_Y = 0,
+		WORLD_SIZE_MAX_Y = 50,
 	};
 
 	const float EMPTY_RTT_VALUE = -1.f;
@@ -88,13 +94,6 @@ private:
 	
 
 private:
-
-	enum
-	{
-		WORLD_SIZE = 301,
-		WORLD_SIZE_MIN_Y = 0,
-		WORLD_SIZE_MAX_Y = 50,
-	};
 
 	unordered_map<uint64, PlayerRef> _players;
 	unordered_map<uint64, PropRef> _props;

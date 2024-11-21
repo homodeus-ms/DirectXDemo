@@ -37,7 +37,7 @@ void CharacterMoveScript::Update()
 	}
 
 
-	// Mouse�� ī�޶� ���� ȸ��
+	// Mouse로 카메라 시점 회전
 
 	if (INPUT->GetButtonDown(KEY_TYPE::RBUTTON))
 	{

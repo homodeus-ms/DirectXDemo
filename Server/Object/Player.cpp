@@ -4,7 +4,7 @@
 Player::Player()
 {
 	static int32 s_startX = 0;
-	// ID ������ �θ�Ŭ������ Create.. �Լ����� ��
+	// ID 셋팅은 부모클래스(GameObject)의 CreatePlayer() 함수에서 하고 있음
 	
 	_info.set_state(IDLE);
 	
