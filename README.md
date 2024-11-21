@@ -1,6 +1,6 @@
 <br>
 
-[Watch this video](https://youtu.be/wvUPG6sIBE4)
+[간단한 영상](https://youtu.be/wvUPG6sIBE4)
 
 <br>
 
