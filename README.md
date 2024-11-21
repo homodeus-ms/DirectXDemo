@@ -9,8 +9,7 @@
 **DirectX11 + IOCP 연동 습작 (제작중)**
 
 IOCP서버 코드와 코드에 대한 대략적인 설명은<br>
-(https://github.com/homodeus-ms/IOCP-portfolio)<br>
-이쪽을 봐주시기 바랍니다.<br>
+[링크](https://github.com/homodeus-ms/IOCP-portfolio)&nbsp이쪽을 봐주시기 바랍니다.<br>
 
 현재까지 이동 동기화, 충돌 처리, Picking, 타겟팅, 공격등이 구현 되었습니다.<br>
 
@@ -122,6 +121,15 @@ GameRoom.cpp 파일에 있습니다. 위 코드와 거의 같습니다.<br>
 현재 까지는 마우스 왼쪽 클릭으로 타켓팅 후, 타겟 마크가 사라지기전에 F키를 눌러서 SphereBall을 던지고 맞추는 것만 구현이 되어 있습니다.<br>
 마우스 클릭 후 생기는 타겟 마크가 항상 카메라 쪽을 향해서 나타나게끔 Billboard 방식을 사용했습니다.<br>
 
+<br>
+
+![Move 방식](ReadMeImages/projectileAttack.jpg)
+
+<br>
+
+<br>
+
+
 **<관련 클래스>**
 
 <br>
@@ -131,7 +139,20 @@ GameRoom.cpp 파일에 있습니다. 위 코드와 거의 같습니다.<br>
 Picking 부분 &nbsp;[Picking](Client/ClientObject/MyPlayer.cpp#L235)<br>
 UpdateSkill부분 &nbsp;[UpdateSkill](Client/ClientObject/MyPlayer.cpp#L60)<br>
 
+**서버**
 
+Projectile 생성 후 Update함수 [Update()](server/Object/Projectile.cpp#L7)<br>
+Projectile 업데이트 때마다 충돌 검사 [CheckCollision](Server/Room/GameRoom.cpp#L585)<br>
+
+<br>
+
+<br>
+
+<br>
+
+감사합니다!
+
+<br>
 
 
 
